@@ -26,7 +26,7 @@ function App() {
     initNotifications();
   }, [checkAuth, initNotifications]);
 
-  if (isCheckingAuth) return <PageLoader />;
+
 
   return (
     <ThemeProvider>

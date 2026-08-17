@@ -14,7 +14,7 @@ const BASE_URL = getBaseUrl();
 
 export const useAuthStore = create((set, get) => ({
   authUser: null,
-  isCheckingAuth: true,
+  isCheckingAuth: false,
   isLoggingIn: false,
   isSigningUp: false,
   onlineUsers: [],
