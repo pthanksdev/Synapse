@@ -111,9 +111,14 @@ export function StoriesBar() {
                 <AvatarImage src={activeStory.userId?.profilePic} />
                 <AvatarFallback>{activeStory.userId?.fullName?.[0]}</AvatarFallback>
               </Avatar>
-              <span className="text-white font-semibold text-xs drop-shadow">
-                {activeStory.userId?.fullName}
-              </span>
+              <div className="flex flex-col">
+                <span className="text-white font-semibold text-xs drop-shadow">
+                  {activeStory.userId?.fullName}
+                </span>
+                <span className="text-[10px] text-white/70 drop-shadow">
+                  Story • 24h Expiry
+                </span>
+              </div>
             </div>
 
             <img
