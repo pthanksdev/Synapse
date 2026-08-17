@@ -12,6 +12,8 @@ import { useEffect } from "react";
 
 import { Toaster } from "react-hot-toast";
 
+import LandingPage from "./pages/LandingPage";
+
 function App() {
   const authUser = useAuthStore((state) => state.authUser);
   const isCheckingAuth = useAuthStore((state) => state.isCheckingAuth);
@@ -32,7 +34,7 @@ function App() {
         <Routes>
           <Route
             path="/"
-            element={authUser ? <ChatPage /> : <Navigate to="/auth" replace />}
+            element={authUser ? <ChatPage /> : <LandingPage />}
           />
           <Route
             path="/auth"
