@@ -55,8 +55,13 @@ app.use("/api/themes", themeRoutes);
 if (fs.existsSync(publicDir)) {
   app.use(express.static(publicDir));
 
-  app.get("/{*any}", (req, res, next) => {
-    res.sendFile(path.join(publicDir, "index.html"), (err) => next(err));
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api")) {
+      return res.status(404).json({ message: `API endpoint ${req.path} not found` });
+    }
+    res.sendFile(path.join(publicDir, "index.html"), (err) => {
+      if (err) next(err);
+    });
   });
 }
 

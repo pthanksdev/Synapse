@@ -3,7 +3,14 @@ import { axiosInstance } from "../lib/axios";
 import { io } from "socket.io-client";
 import toast from "react-hot-toast";
 
-const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:3000" : "/";
+const getBaseUrl = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL.replace(/\/api\/?$/, "");
+  }
+  return import.meta.env.MODE === "development" ? "http://localhost:3000" : "https://api-synapse-v1.onrender.com";
+};
+
+const BASE_URL = getBaseUrl();
 
 export const useAuthStore = create((set, get) => ({
   authUser: null,
