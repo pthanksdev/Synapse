@@ -31,9 +31,13 @@ export async function register(req, res, next) {
       return res.status(400).json({ message: "Email is already registered" });
     }
 
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
     const newUser = await User.create({
       fullName,
       email: email.toLowerCase(),
+      password: hashedPassword,
       profilePic: `https://avatar.iran.liara.run/public/boy?username=${encodeURIComponent(fullName)}`,
     });
 
@@ -55,6 +59,7 @@ export async function register(req, res, next) {
         fullName: newUser.fullName,
         email: newUser.email,
         profilePic: newUser.profilePic,
+        role: newUser.role,
       },
       accessToken,
     });
@@ -76,6 +81,13 @@ export async function login(req, res, next) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
+    if (user.password) {
+      const isPasswordMatch = await bcrypt.compare(password, user.password);
+      if (!isPasswordMatch) {
+        return res.status(400).json({ message: "Invalid credentials" });
+      }
+    }
+
     const accessToken = generateAccessToken({ userId: user._id.toString() });
     const refreshToken = generateRefreshToken({ userId: user._id.toString() });
 
@@ -87,6 +99,7 @@ export async function login(req, res, next) {
         fullName: user.fullName,
         email: user.email,
         profilePic: user.profilePic,
+        role: user.role,
       },
       accessToken,
     });

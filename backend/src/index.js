@@ -8,6 +8,7 @@ import path from "path";
 
 import { connectDB } from "./lib/db.js";
 import { connectPostgres } from "./lib/pg.js";
+import { seedAdminUser } from "./lib/seedAdmin.js";
 import job from "./lib/cron.js";
 
 // Domain Routes
@@ -65,6 +66,7 @@ app.use(globalErrorHandler);
 server.listen(PORT, async () => {
   await connectDB();
   await connectPostgres();
+  await seedAdminUser();
   console.log("Server is up and running on PORT:", PORT);
 
   if (process.env.NODE_ENV === "production") job.start();
