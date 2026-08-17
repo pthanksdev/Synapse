@@ -34,3 +34,11 @@ export async function protectRoute(req, res, next) {
     res.status(500).json({ message: "Internal server error" });
   }
 }
+
+export function requireAdmin(req, res, next) {
+  if (req.user && req.user.role === "admin") {
+    next();
+  } else {
+    res.status(403).json({ message: "Forbidden - Requires Admin Role" });
+  }
+}
