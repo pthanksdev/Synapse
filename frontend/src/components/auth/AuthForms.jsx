@@ -128,10 +128,6 @@ export function AuthForms() {
           )}
         </Button>
       </form>
-
-      <div className="text-center text-[11px] text-muted">
-        <span>Protected by dual PostgreSQL + MongoDB secure architecture</span>
-      </div>
     </div>
   );
 }
