@@ -6,10 +6,13 @@ import { verifyAccessToken } from "./jwt.js";
 const app = express();
 const server = http.createServer(app);
 
-const allowedOrigin = process.env.FRONTEND_URL || "http://localhost:5173";
-
 const io = new Server(server, {
-  cors: { origin: [allowedOrigin], credentials: true },
+  cors: {
+    origin: (origin, callback) => {
+      callback(null, origin || true);
+    },
+    credentials: true,
+  },
 });
 
 // online users map = { userId: socketId }

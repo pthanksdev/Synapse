@@ -33,7 +33,15 @@ const publicDir = path.join(process.cwd(), "public");
 
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({ origin: FRONTEND_URL, credentials: true }));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow any requesting origin dynamically to support Vercel, Render, local dev, etc.
+      callback(null, origin || true);
+    },
+    credentials: true,
+  })
+);
 
 app.get("/health", (req, res) => {
   res.status(200).json({ ok: true, status: "healthy" });

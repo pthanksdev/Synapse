@@ -1,10 +1,12 @@
 import axios from "axios";
 
 const getBaseURL = () => {
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
+  let rawUrl = import.meta.env.VITE_API_URL || (import.meta.env.MODE === "development" ? "http://localhost:3000/api" : "https://api-synapse-v1.onrender.com/api");
+  let cleanUrl = rawUrl.trim().replace(/\/+$/, "");
+  if (!cleanUrl.endsWith("/api")) {
+    cleanUrl += "/api";
   }
-  return import.meta.env.MODE === "development" ? "http://localhost:3000/api" : "https://api-synapse-v1.onrender.com/api";
+  return cleanUrl;
 };
 
 export const axiosInstance = axios.create({
