@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuthStore } from "../../store/useAuthStore";
-import { UserIcon, CameraIcon, XIcon, LockIcon, ShareIcon, CopyIcon, CloudUploadIcon, DownloadIcon } from "lucide-react";
+import { UserIcon, CameraIcon, XIcon, LockIcon, ShareIcon, CopyIcon, CloudUploadIcon, LogOutIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -8,7 +8,7 @@ import toast from "react-hot-toast";
 import { axiosInstance } from "../../lib/axios";
 
 export function ProfileModal({ isOpen, onClose }) {
-  const { authUser, checkAuth } = useAuthStore();
+  const { authUser, checkAuth, logout } = useAuthStore();
   const [fullName, setFullName] = useState(authUser?.fullName || "");
   const [bio, setBio] = useState(authUser?.bio || "");
   const [password, setPassword] = useState("");
@@ -144,13 +144,26 @@ export function ProfileModal({ isOpen, onClose }) {
           </Button>
         </div>
 
-        <div className="flex justify-end gap-2 pt-2 border-t border-border shrink-0">
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
+        <div className="flex items-center justify-between pt-3 border-t border-border shrink-0">
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => {
+              onClose();
+              logout();
+            }}
+            className="flex items-center gap-1.5 text-xs bg-red-600/90 hover:bg-red-600 text-white"
+          >
+            <LogOutIcon className="size-3.5" /> Log Out
           </Button>
-          <Button variant="primary" disabled={isUpdating} onClick={handleSaveProfile}>
-            {isUpdating ? "Saving..." : "Save Changes"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button variant="primary" size="sm" disabled={isUpdating} onClick={handleSaveProfile}>
+              {isUpdating ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

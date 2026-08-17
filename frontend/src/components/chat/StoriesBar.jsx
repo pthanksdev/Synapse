@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { axiosInstance } from "../../lib/axios";
 import { useAuthStore } from "../../store/useAuthStore";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { PlusIcon, XIcon } from "lucide-react";
+import { PlusIcon, XIcon, Trash2Icon } from "lucide-react";
 import toast from "react-hot-toast";
 
 export function StoriesBar() {
@@ -18,6 +18,17 @@ export function StoriesBar() {
       setStories(res.data);
     } catch (error) {
       console.error(error);
+    }
+  };
+
+  const handleDeleteStory = async (storyId) => {
+    try {
+      await axiosInstance.delete(`/stories/${storyId}`);
+      toast.success("Story deleted");
+      setActiveStory(null);
+      fetchStories();
+    } catch (error) {
+      toast.error("Failed to delete story");
     }
   };
 
@@ -55,25 +66,27 @@ export function StoriesBar() {
       />
 
       <div className="flex items-center gap-3 overflow-x-auto no-scrollbar">
-        {/* Post Story Button */}
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="flex flex-col items-center gap-1 shrink-0 group"
-          disabled={isUploading}
-        >
-          <div className="relative size-12 rounded-full border-2 border-dashed border-accent flex items-center justify-center bg-accent/10 group-hover:scale-105 transition">
-            <Avatar className="size-10">
-              <AvatarImage src={authUser?.profilePic} />
-              <AvatarFallback>{authUser?.fullName?.[0]}</AvatarFallback>
-            </Avatar>
-            <div className="absolute -bottom-1 -right-1 size-5 rounded-full bg-accent text-accent-foreground flex items-center justify-center shadow">
-              <PlusIcon className="size-3.5" />
+        {/* Post Story Button (Regular Users Only) */}
+        {authUser?.role !== "admin" && (
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex flex-col items-center gap-1 shrink-0 group"
+            disabled={isUploading}
+          >
+            <div className="relative size-12 rounded-full border-2 border-dashed border-accent flex items-center justify-center bg-accent/10 group-hover:scale-105 transition">
+              <Avatar className="size-10">
+                <AvatarImage src={authUser?.profilePic} />
+                <AvatarFallback>{authUser?.fullName?.[0]}</AvatarFallback>
+              </Avatar>
+              <div className="absolute -bottom-1 -right-1 size-5 rounded-full bg-accent text-accent-foreground flex items-center justify-center shadow">
+                <PlusIcon className="size-3.5" />
+              </div>
             </div>
-          </div>
-          <span className="text-[10px] font-semibold text-muted truncate max-w-[56px]">
-            {isUploading ? "Posting..." : "Your Story"}
-          </span>
-        </button>
+            <span className="text-[10px] font-semibold text-muted truncate max-w-[56px]">
+              {isUploading ? "Posting..." : "Your Story"}
+            </span>
+          </button>
+        )}
 
         {/* Stories List */}
         {stories.map((story) => (
@@ -99,12 +112,23 @@ export function StoriesBar() {
       {activeStory && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-200">
           <div className="relative w-full max-w-sm aspect-[9/16] rounded-3xl overflow-hidden bg-black shadow-2xl flex flex-col">
-            <button
-              onClick={() => setActiveStory(null)}
-              className="absolute top-4 right-4 z-20 size-8 rounded-full bg-black/50 text-white flex items-center justify-center"
-            >
-              <XIcon className="size-5" />
-            </button>
+            <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+              {(activeStory.userId?._id === authUser?._id || activeStory.userId === authUser?._id || authUser?.role === "admin") && (
+                <button
+                  onClick={() => handleDeleteStory(activeStory._id)}
+                  title="Delete Story"
+                  className="size-8 rounded-full bg-red-500/80 text-white flex items-center justify-center hover:bg-red-600 transition shadow"
+                >
+                  <Trash2Icon className="size-4" />
+                </button>
+              )}
+              <button
+                onClick={() => setActiveStory(null)}
+                className="size-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/80 transition"
+              >
+                <XIcon className="size-5" />
+              </button>
+            </div>
 
             <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
               <Avatar className="size-8 border border-white/20">

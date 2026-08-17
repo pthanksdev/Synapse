@@ -149,35 +149,6 @@ function ChatSidebar() {
             >
               <StarIcon className="size-4.5" />
             </button>
-
-            <button
-              onClick={() => setIsProfileOpen(true)}
-              title="Edit Profile & Settings"
-              className="group relative rounded-full ring-1 ring-border p-0.5 hover:ring-accent transition"
-            >
-              <Avatar className="size-8 shrink-0">
-                <AvatarImage src={authUser?.profilePic} alt={authUser?.fullName} />
-                <AvatarFallback className="text-xs font-semibold">
-                  {getInitials(authUser?.fullName || "Me")}
-                </AvatarFallback>
-              </Avatar>
-            </button>
-
-            <button
-              onClick={() => setIsProfileOpen(true)}
-              title="Profile Settings"
-              className="rounded-lg p-1.5 text-muted hover:bg-surface hover:text-foreground"
-            >
-              <SettingsIcon className="size-4.5" />
-            </button>
-
-            <button
-              onClick={logout}
-              title="Log Out"
-              className="rounded-lg p-1.5 text-muted hover:bg-surface hover:text-foreground"
-            >
-              <LogOutIcon className="size-4.5" />
-            </button>
           </div>
         </div>
       </div>
@@ -308,6 +279,40 @@ function ChatSidebar() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Bottom User Profile Card */}
+      <div className="shrink-0 border-t border-border bg-surface/40 p-2.5 flex items-center justify-between">
+        <div
+          onClick={() => setIsProfileOpen(true)}
+          className="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer group"
+        >
+          <div className="relative shrink-0">
+            <Avatar className="size-9 border border-border group-hover:border-accent transition">
+              <AvatarImage src={authUser?.profilePic} alt={authUser?.fullName} />
+              <AvatarFallback className="text-xs font-semibold">
+                {getInitials(authUser?.fullName || "Me")}
+              </AvatarFallback>
+            </Avatar>
+            <span className="absolute bottom-0 right-0 size-2.5 rounded-full bg-emerald-500 ring-2 ring-background" />
+          </div>
+          <div className="flex flex-col min-w-0 flex-1">
+            <span className="text-xs font-semibold truncate group-hover:text-accent transition">
+              {authUser?.fullName}
+            </span>
+            <span className="text-[10px] text-muted truncate">
+              {authUser?.bio || authUser?.email}
+            </span>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setIsProfileOpen(true)}
+          title="Account Settings"
+          className="rounded-lg p-1.5 text-muted hover:bg-surface hover:text-foreground transition shrink-0"
+        >
+          <SettingsIcon className="size-4" />
+        </button>
+      </div>
     </aside>
   );
 }
