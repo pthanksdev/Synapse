@@ -19,7 +19,7 @@ export async function seedAdminUser() {
         email: adminEmail,
         password: hashedPassword,
         role: "admin",
-        profilePic: "https://avatar.iran.liara.run/public/boy?username=SystemAdmin",
+        profilePic: "https://ui-avatars.com/api/?name=System+Admin&background=6366f1&color=fff",
         bio: "Default Synapse Enterprise Administrator",
       });
       console.log("✅ [Seed] Created seed admin user:", adminEmail);

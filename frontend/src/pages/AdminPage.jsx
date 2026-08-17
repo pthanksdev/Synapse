@@ -236,12 +236,17 @@ export default function AdminPage() {
               </h1>
               <p className="text-xs text-muted">
                 Modular oversight: users, usage telemetry, group rosters & security audit trail.
-              </p>
+                </p>
             </div>
           </div>
-          <Button variant="secondary" size="sm" onClick={fetchAllData}>
-            <RefreshCwIcon className="size-4 mr-1.5" /> Refresh Telemetry
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate("/chat")} className="gap-1.5 text-xs">
+              <MessageSquareIcon className="size-4 text-accent" /> Switch to User Chat View
+            </Button>
+            <Button variant="secondary" size="sm" onClick={fetchAllData}>
+              <RefreshCwIcon className="size-4 mr-1.5" /> Refresh Telemetry
+            </Button>
+          </div>
         </div>
 
         {/* Master Navigation Tabs */}

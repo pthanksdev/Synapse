@@ -34,11 +34,31 @@ function App() {
         <Routes>
           <Route
             path="/"
-            element={authUser ? <ChatPage /> : <LandingPage />}
+            element={
+              authUser ? (
+                authUser.role === "admin" ? (
+                  <Navigate to="/admin" replace />
+                ) : (
+                  <ChatPage />
+                )
+              ) : (
+                <LandingPage />
+              )
+            }
           />
           <Route
             path="/auth"
-            element={!authUser ? <AuthPage /> : <Navigate to="/" replace />}
+            element={
+              !authUser ? (
+                <AuthPage />
+              ) : (
+                <Navigate to={authUser?.role === "admin" ? "/admin" : "/"} replace />
+              )
+            }
+          />
+          <Route
+            path="/chat"
+            element={authUser ? <ChatPage /> : <Navigate to="/auth" replace />}
           />
           <Route
             path="/join/group/:inviteCode"
@@ -46,7 +66,7 @@ function App() {
           />
           <Route
             path="/admin"
-            element={authUser ? <AdminPage /> : <Navigate to="/auth" replace />}
+            element={authUser?.role === "admin" ? <AdminPage /> : <Navigate to={authUser ? "/" : "/auth"} replace />}
           />
         </Routes>
         <Toaster />
