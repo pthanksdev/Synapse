@@ -161,7 +161,7 @@ export default function LandingPage() {
                 className="w-full sm:w-auto bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold rounded-lg px-6 py-3 text-base shadow-lg shadow-cyan-500/20 active:scale-[0.98] transition-all"
               >
                 <Link to="/auth" className="flex items-center gap-2">
-                  Start Free Trial <ArrowRightIcon className="w-4 h-4" />
+                  Start Chatting Now <ArrowRightIcon className="w-4 h-4" />
                 </Link>
               </Button>
               <Button
@@ -175,8 +175,8 @@ export default function LandingPage() {
             </div>
 
             <p className="text-xs text-slate-500 mt-4 flex items-center justify-center gap-4">
+              <span className="flex items-center gap-1"><CheckCircle2Icon className="w-3.5 h-3.5 text-cyan-500" /> 100% Free & Open Platform</span>
               <span className="flex items-center gap-1"><CheckCircle2Icon className="w-3.5 h-3.5 text-cyan-500" /> No credit card required</span>
-              <span className="flex items-center gap-1"><CheckCircle2Icon className="w-3.5 h-3.5 text-cyan-500" /> Free 14-day team trial</span>
             </p>
           </div>
 
@@ -412,128 +412,45 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* PRICING SECTION */}
+        {/* FREE ACCESS SECTION */}
         <section id="pricing" className="py-24 bg-[#080B10] border-t border-slate-800/60 scroll-mt-20">
-          <div className="container mx-auto px-4 md:px-6 max-w-6xl">
-            <div className="max-w-xl mx-auto text-center mb-12">
-              <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight mb-4">
-                Simple, transparent pricing
+          <div className="container mx-auto px-4 md:px-6 max-w-4xl text-center">
+            <div className="bg-[#0F141C] border border-cyan-500/30 rounded-2xl p-8 md:p-12 relative overflow-hidden shadow-2xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-semibold uppercase tracking-wider mb-6">
+                <SparklesIcon className="w-3.5 h-3.5" /> Completely Free Platform
+              </div>
+              <h2 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight mb-4">
+                100% Free Forever. No Hidden Costs.
               </h2>
-              <p className="text-slate-400 text-sm mb-6">
-                Start with our full-featured free tier. Scale as your team grows.
+              <p className="text-slate-400 text-base max-w-2xl mx-auto mb-8 leading-relaxed">
+                Synapse is built to empower seamless, secure collaboration for everyone. Enjoy unlimited messages, crystal-clear voice notes, end-to-end encryption, and group chats without any paywalls or per-user fees.
               </p>
 
-              {/* Billing Cycle Switch */}
-              <div className="inline-flex items-center bg-slate-900 p-1 rounded-lg border border-slate-800 text-xs font-medium">
-                <button
-                  onClick={() => setBillingCycle("monthly")}
-                  className={`px-4 py-1.5 rounded-md transition-all ${
-                    billingCycle === "monthly" ? "bg-slate-800 text-white font-semibold" : "text-slate-400"
-                  }`}
-                >
-                  Monthly
-                </button>
-                <button
-                  onClick={() => setBillingCycle("annual")}
-                  className={`px-4 py-1.5 rounded-md transition-all flex items-center gap-1.5 ${
-                    billingCycle === "annual" ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-semibold" : "text-slate-400"
-                  }`}
-                >
-                  Annual <span className="bg-cyan-500/20 text-cyan-300 text-[10px] px-1.5 py-0.5 rounded">Save 20%</span>
-                </button>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left max-w-2xl mx-auto mb-10">
+                <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-800">
+                  <div className="text-cyan-400 font-bold text-lg mb-1">Unlimited</div>
+                  <div className="text-xs text-slate-400">Messages, media sharing & group chats</div>
+                </div>
+                <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-800">
+                  <div className="text-cyan-400 font-bold text-lg mb-1">Full E2EE</div>
+                  <div className="text-xs text-slate-400">Military-grade security on every device</div>
+                </div>
+                <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-800">
+                  <div className="text-cyan-400 font-bold text-lg mb-1">Zero Cost</div>
+                  <div className="text-xs text-slate-400">No subscriptions, ads, or hidden tiers</div>
+                </div>
               </div>
+
+              <Button
+                asChild
+                size="lg"
+                className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-lg px-8 py-3.5 text-base shadow-lg shadow-cyan-500/20 active:scale-95 transition-all"
+              >
+                <Link to="/auth" className="inline-flex items-center gap-2">
+                  Create Your Free Account <ArrowRightIcon className="w-4 h-4" />
+                </Link>
+              </Button>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
-              {/* Starter */}
-              <div className="bg-[#0F141C] border border-slate-800 rounded-xl p-8 flex flex-col justify-between">
-                <div>
-                  <h3 className="text-lg font-bold text-white">Community</h3>
-                  <p className="text-xs text-slate-400 mt-1">For small teams getting started</p>
-                  <div className="my-6">
-                    <span className="text-4xl font-extrabold text-white">$0</span>
-                    <span className="text-slate-500 text-xs font-medium ml-1">/ forever</span>
-                  </div>
-                  <ul className="space-y-3 text-xs text-slate-300 mb-8">
-                    <li className="flex items-center gap-2"><CheckCircle2Icon className="w-4 h-4 text-cyan-400" /> Up to 10 team members</li>
-                    <li className="flex items-center gap-2"><CheckCircle2Icon className="w-4 h-4 text-cyan-400" /> End-to-end message encryption</li>
-                    <li className="flex items-center gap-2"><CheckCircle2Icon className="w-4 h-4 text-cyan-400" /> Voice notes & media uploads</li>
-                  </ul>
-                </div>
-                <Button asChild variant="outline" className="w-full border-slate-800 hover:bg-slate-800 text-white">
-                  <Link to="/auth">Get Started Free</Link>
-                </Button>
-              </div>
-
-              {/* Pro (Highlighted) */}
-              <div className="bg-[#0F141C] border-2 border-cyan-500/80 rounded-xl p-8 flex flex-col justify-between relative shadow-xl shadow-cyan-500/10">
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-cyan-500 text-slate-950 font-bold text-[11px] uppercase tracking-wider px-3 py-0.5 rounded-full">
-                  Most Popular
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white">Pro Team</h3>
-                  <p className="text-xs text-slate-400 mt-1">For growing engineering organizations</p>
-                  <div className="my-6">
-                    <span className="text-4xl font-extrabold text-white">
-                      {billingCycle === "annual" ? "$10" : "$12"}
-                    </span>
-                    <span className="text-slate-500 text-xs font-medium ml-1">/ user / mo</span>
-                  </div>
-                  <ul className="space-y-3 text-xs text-slate-300 mb-8">
-                    <li className="flex items-center gap-2"><CheckCircle2Icon className="w-4 h-4 text-cyan-400" /> Unlimited team members</li>
-                    <li className="flex items-center gap-2"><CheckCircle2Icon className="w-4 h-4 text-cyan-400" /> Full Admin Control Suite</li>
-                    <li className="flex items-center gap-2"><CheckCircle2Icon className="w-4 h-4 text-cyan-400" /> Unlimited voice & video calls</li>
-                    <li className="flex items-center gap-2"><CheckCircle2Icon className="w-4 h-4 text-cyan-400" /> Priority telemetry support</li>
-                  </ul>
-                </div>
-                <Button asChild className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold shadow-md">
-                  <Link to="/auth">Start 14-Day Pro Trial</Link>
-                </Button>
-              </div>
-
-              {/* Enterprise */}
-              <div className="bg-[#0F141C] border border-slate-800 rounded-xl p-8 flex flex-col justify-between">
-                <div>
-                  <h3 className="text-lg font-bold text-white">Enterprise</h3>
-                  <p className="text-xs text-slate-400 mt-1">Custom deployment & governance</p>
-                  <div className="my-6">
-                    <span className="text-4xl font-extrabold text-white">Custom</span>
-                  </div>
-                  <ul className="space-y-3 text-xs text-slate-300 mb-8">
-                    <li className="flex items-center gap-2"><CheckCircle2Icon className="w-4 h-4 text-cyan-400" /> Dedicated database hosting</li>
-                    <li className="flex items-center gap-2"><CheckCircle2Icon className="w-4 h-4 text-cyan-400" /> Custom SLA & 24/7 uptime</li>
-                    <li className="flex items-center gap-2"><CheckCircle2Icon className="w-4 h-4 text-cyan-400" /> Custom SSO & Audit Logging</li>
-                  </ul>
-                </div>
-                <Button asChild variant="outline" className="w-full border-slate-800 hover:bg-slate-800 text-white">
-                  <Link to="/auth">Contact Sales</Link>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* HIGH-CONTRAST CTA BAND */}
-        <section className="py-24 container mx-auto px-4 md:px-6 max-w-5xl">
-          <div className="bg-gradient-to-r from-cyan-950/40 via-slate-900 to-violet-950/40 border border-slate-800 rounded-2xl p-10 md:p-16 text-center shadow-2xl relative overflow-hidden">
-            <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight mb-4">
-              Experience the future of team messaging today.
-            </h2>
-            <p className="text-slate-400 text-base max-w-xl mx-auto mb-8">
-              No long setup guides. Deploy your workspace in under 60 seconds.
-            </p>
-            <Button
-              asChild
-              size="lg"
-              className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-lg px-8 py-3.5 text-base shadow-lg shadow-cyan-500/20 active:scale-95 transition-all"
-            >
-              <Link to="/auth" className="inline-flex items-center gap-2">
-                Launch Synapse Free <ArrowRightIcon className="w-4 h-4" />
-              </Link>
-            </Button>
-            <p className="text-xs text-slate-500 mt-4">
-              Protected by dual PostgreSQL + MongoDB secure architecture
-            </p>
           </div>
         </section>
       </main>
