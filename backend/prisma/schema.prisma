@@ -1,0 +1,133 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  MEMBER
+  ADMIN
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+}
+
+model User {
+  id                  String               @id @default(uuid())
+  email               String               @unique
+  fullName            String
+  passwordHash        String
+  profilePic          String?              @default("")
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  refreshTokens       RefreshToken[]
+  sentMessages        Message[]            @relation("SentMessages")
+  receivedMessages    Message[]            @relation("ReceivedMessages")
+  groupMemberships    GroupMember[]
+  reactions           Reaction[]
+  pinnedChats         PinnedChat[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id          String   @id @default(uuid())
+  userId      String
+  tokenHash   String   @unique
+  expiresAt   DateTime
+  isRevoked   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model Group {
+  id          String        @id @default(uuid())
+  name        String
+  avatarUrl   String?       @default("")
+  description String?       @default("")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  members     GroupMember[]
+  messages    Message[]
+
+  @@map("groups")
+}
+
+model GroupMember {
+  id        String   @id @default(uuid())
+  groupId   String
+  userId    String
+  role      Role     @default(MEMBER)
+  joinedAt  DateTime @default(now())
+
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@map("group_members")
+}
+
+model Message {
+  id           String        @id @default(uuid())
+  senderId     String
+  receiverId   String?
+  groupId      String?
+  text         String?
+  imageUrl     String?
+  videoUrl     String?
+  audioUrl     String?
+  status       MessageStatus @default(SENT)
+  replyToId    String?
+  isEdited     Boolean       @default(false)
+  isUnsent     Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  sender       User          @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver     User?         @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  group        Group?        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  replyTo      Message?      @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies      Message[]     @relation("MessageReplies")
+  reactions    Reaction[]
+
+  @@index([senderId, receiverId, createdAt])
+  @@index([groupId, createdAt])
+  @@map("messages")
+}
+
+model Reaction {
+  id        String   @id @default(uuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@map("reactions")
+}
+
+model PinnedChat {
+  id             String   @id @default(uuid())
+  userId         String
+  targetUserId   String?
+  targetGroupId  String?
+  createdAt      DateTime @default(now())
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("pinned_chats")
+}
