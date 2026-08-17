@@ -24,6 +24,12 @@ export const useAuthStore = create((set, get) => ({
   checkAuth: async () => {
     set({ isCheckingAuth: true });
 
+    const token = localStorage.getItem("synapse_access_token");
+    if (!token) {
+      set({ authUser: null, isCheckingAuth: false });
+      return;
+    }
+
     try {
       const res = await axiosInstance.get("/auth/check");
       set({ authUser: res.data });
@@ -36,6 +42,9 @@ export const useAuthStore = create((set, get) => ({
           localStorage.setItem("synapse_access_token", refreshRes.data.accessToken);
           set({ authUser: refreshRes.data.user });
           get().connectSocket(refreshRes.data.user);
+        } else {
+          set({ authUser: null });
+          localStorage.removeItem("synapse_access_token");
         }
       } catch {
         set({ authUser: null });

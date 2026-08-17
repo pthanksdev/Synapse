@@ -4,12 +4,12 @@ import User from "../models/user.model.js";
 import { syncUserToMongo } from "../lib/mongoSync.js";
 import { uploadToImageKit } from "../lib/imagekit.js";
 
-// Helper function to set HttpOnly refresh token cookie
+// Helper function to set HttpOnly refresh token cookie across origins
 function setRefreshTokenCookie(res, refreshToken) {
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: true,
+    sameSite: "none",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 }
@@ -168,8 +168,8 @@ export async function logout(req, res, next) {
   try {
     res.clearCookie("refreshToken", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      secure: true,
+      sameSite: "none",
     });
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
