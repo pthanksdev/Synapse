@@ -17,7 +17,7 @@ function setRefreshTokenCookie(res, refreshToken) {
 
 export async function register(req, res, next) {
   try {
-    const { fullName, email, password } = req.body;
+    const { fullName, email, password, username: customUsername } = req.body;
 
     if (!fullName || !email || !password) {
       return res.status(400).json({ message: "All fields are required" });
@@ -32,21 +32,30 @@ export async function register(req, res, next) {
       return res.status(400).json({ message: "Email is already registered" });
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    const emailPrefix = email.split("@")[0].replace(/[^a-zA-Z0-9]/g, "");
-    const randomSuffix = crypto.randomBytes(2).toString("hex");
-    let username = `${emailPrefix}_${randomSuffix}`.toLowerCase();
-    
-    // Ensure uniqueness just in case
-    let isUnique = false;
-    while (!isUnique) {
-      const existingUsername = await User.findOne({ username });
+    let username = "";
+    if (customUsername && customUsername.trim()) {
+      const formatted = customUsername.trim().toLowerCase();
+      if (!/^[a-zA-Z0-9_]{3,20}$/.test(formatted)) {
+        return res.status(400).json({ message: "Username must be 3-20 characters long and can only contain letters, numbers, and underscores" });
+      }
+      const existingUsername = await User.findOne({ username: formatted });
       if (existingUsername) {
-        username = `${emailPrefix}_${crypto.randomBytes(3).toString("hex")}`.toLowerCase();
-      } else {
-        isUnique = true;
+        return res.status(400).json({ message: "Username is already taken" });
+      }
+      username = formatted;
+    } else {
+      const emailPrefix = email.split("@")[0].replace(/[^a-zA-Z0-9]/g, "");
+      const randomSuffix = crypto.randomBytes(2).toString("hex");
+      username = `${emailPrefix}_${randomSuffix}`.toLowerCase();
+      
+      let isUnique = false;
+      while (!isUnique) {
+        const existingUsername = await User.findOne({ username });
+        if (existingUsername) {
+          username = `${emailPrefix}_${crypto.randomBytes(3).toString("hex")}`.toLowerCase();
+        } else {
+          isUnique = true;
+        }
       }
     }
 
@@ -75,6 +84,7 @@ export async function register(req, res, next) {
       user: {
         _id: newUser._id.toString(),
         fullName: newUser.fullName,
+        username: newUser.username,
         email: newUser.email,
         profilePic: newUser.profilePic,
         role: newUser.role,
@@ -88,13 +98,16 @@ export async function register(req, res, next) {
 
 export async function login(req, res, next) {
   try {
-    const { email, password } = req.body;
+    const { email, identifier: rawIdentifier, password } = req.body;
+    const identifier = (rawIdentifier || email || "").trim().toLowerCase();
 
-    if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required" });
+    if (!identifier || !password) {
+      return res.status(400).json({ message: "Email/Username and password are required" });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({
+      $or: [{ email: identifier }, { username: identifier }],
+    });
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
@@ -115,6 +128,7 @@ export async function login(req, res, next) {
       user: {
         _id: user._id.toString(),
         fullName: user.fullName,
+        username: user.username,
         email: user.email,
         profilePic: user.profilePic,
         role: user.role,

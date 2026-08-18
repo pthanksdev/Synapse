@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LockIcon, MailIcon, UserIcon, ArrowRightIcon, Loader2Icon } from "lucide-react";
+import { LockIcon, MailIcon, UserIcon, AtSignIcon, ArrowRightIcon, Loader2Icon } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -8,6 +8,7 @@ export function AuthForms() {
   const [mode, setMode] = useState("login"); // 'login' | 'register'
   const [formData, setFormData] = useState({
     fullName: "",
+    username: "",
     email: "",
     password: "",
   });
@@ -19,7 +20,7 @@ export function AuthForms() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (mode === "login") {
-      await login({ email: formData.email, password: formData.password });
+      await login({ identifier: formData.email, password: formData.password });
     } else {
       await register(formData);
     }
@@ -66,30 +67,52 @@ export function AuthForms() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {mode === "register" && (
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-muted">Full Name</label>
-            <div className="relative">
-              <UserIcon className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
-              <Input
-                type="text"
-                required
-                placeholder="John Doe"
-                value={formData.fullName}
-                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                className="pl-10 h-10"
-              />
+          <>
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-muted">Full Name</label>
+              <div className="relative">
+                <UserIcon className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
+                <Input
+                  type="text"
+                  required
+                  placeholder="John Doe"
+                  value={formData.fullName}
+                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                  className="pl-10 h-10"
+                />
+              </div>
             </div>
-          </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-muted">Username (Optional)</label>
+              <div className="relative">
+                <AtSignIcon className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
+                <Input
+                  type="text"
+                  placeholder="johndoe (auto-generated if empty)"
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
+                  className="pl-10 h-10"
+                />
+              </div>
+            </div>
+          </>
         )}
 
         <div>
-          <label className="mb-1 block text-xs font-semibold text-muted">Email Address</label>
+          <label className="mb-1 block text-xs font-semibold text-muted">
+            {mode === "login" ? "Email or Username" : "Email Address"}
+          </label>
           <div className="relative">
-            <MailIcon className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
+            {mode === "login" ? (
+              <UserIcon className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
+            ) : (
+              <MailIcon className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
+            )}
             <Input
-              type="email"
+              type={mode === "login" ? "text" : "email"}
               required
-              placeholder="name@example.com"
+              placeholder={mode === "login" ? "name@example.com or username" : "name@example.com"}
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               className="pl-10 h-10"

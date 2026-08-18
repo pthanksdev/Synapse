@@ -19,6 +19,11 @@ export function ConversationRow({ user, selected, onSelect }) {
 
       <div className="min-w-0 flex-1">
         <p className="truncate text-[15px] font-semibold">{user.name}</p>
+        {(user.username || user.peer?.subtitle) && (
+          <p className="truncate text-xs text-muted">
+            {user.username ? `@${user.username}` : user.peer?.subtitle}
+          </p>
+        )}
       </div>
     </button>
   );

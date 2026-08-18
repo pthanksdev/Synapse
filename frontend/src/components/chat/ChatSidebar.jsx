@@ -22,11 +22,13 @@ function mapUserForList(user, onlineUsers) {
     conversationId: user._id,
     id: user._id,
     name: user.fullName,
+    username: user.username,
     avatarUrl: user.profilePic,
     initials: getInitials(user.fullName || "User"),
     isOnline: onlineUsers.includes(user._id),
     peer: {
       name: user.fullName,
+      username: user.username,
       avatarUrl: user.profilePic,
       initials: getInitials(user.fullName || "User"),
       isOnline: onlineUsers.includes(user._id),
@@ -65,6 +67,9 @@ function ChatSidebar() {
 
   const searchQuery = useChatStore((state) => state.searchQuery);
   const setSearchQuery = useChatStore((state) => state.setSearchQuery);
+  const searchResults = useChatStore((state) => state.searchResults);
+  const searchUsers = useChatStore((state) => state.searchUsers);
+  const isSearchingUsers = useChatStore((state) => state.isSearchingUsers);
 
   const sidebarTab = useChatStore((state) => state.sidebarTab);
   const setSidebarTab = useChatStore((state) => state.setSidebarTab);
@@ -86,22 +91,32 @@ function ChatSidebar() {
 
   const normalizedSearchQuery = searchQuery.trim().toLowerCase();
 
+  useEffect(() => {
+    if (normalizedSearchQuery) {
+      const timer = setTimeout(() => {
+        searchUsers(normalizedSearchQuery);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [normalizedSearchQuery, searchUsers]);
+
   const conversationUsers = conversations.map((user) => mapUserForList(user, onlineUsers));
   const allUsers = users.map((user) => mapUserForList(user, onlineUsers));
+  const mappedSearchResults = searchResults.map((user) => mapUserForList(user, onlineUsers));
   const allGroups = groups.map((g) => mapGroupForList(g));
 
   const filteredConversations = normalizedSearchQuery
-    ? conversationUsers.filter((conversation) =>
-        conversation.peer.name.toLowerCase().includes(normalizedSearchQuery)
+    ? conversationUsers.filter(
+        (conversation) =>
+          conversation.peer.name.toLowerCase().includes(normalizedSearchQuery) ||
+          (conversation.username && conversation.username.toLowerCase().includes(normalizedSearchQuery))
       )
     : conversationUsers;
 
   const pinnedList = filteredConversations.filter((c) => pinnedChats.includes(c.id));
   const unpinnedList = filteredConversations.filter((c) => !pinnedChats.includes(c.id));
 
-  const filteredUsers = normalizedSearchQuery
-    ? allUsers.filter((user) => user.name.toLowerCase().includes(normalizedSearchQuery))
-    : allUsers;
+  const filteredUsers = normalizedSearchQuery ? mappedSearchResults : allUsers;
 
   const filteredGroups = normalizedSearchQuery
     ? allGroups.filter((g) => g.name.toLowerCase().includes(normalizedSearchQuery))
@@ -266,8 +281,12 @@ function ChatSidebar() {
 
         {/* Users / People Panel */}
         <TabsContent value="users" className="flex-1 overflow-x-hidden overflow-y-auto outline-none">
-          {filteredUsers.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-muted">No people match your search.</p>
+          {isSearchingUsers ? (
+            <p className="px-4 py-6 text-center text-xs text-muted">Searching users by username/email...</p>
+          ) : filteredUsers.length === 0 ? (
+            <p className="px-4 py-6 text-center text-sm text-muted">
+              {normalizedSearchQuery ? "No users found matching your search." : "No recent users yet. Search above by username!"}
+            </p>
           ) : (
             filteredUsers.map((user) => (
               <ConversationRow

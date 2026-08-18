@@ -24,6 +24,8 @@ export const useChatStore = create(
       hasMoreMessages: true,
       activeConversationId: null,
       searchQuery: "",
+      searchResults: [],
+      isSearchingUsers: false,
       sidebarTab: "chats",
       composerText: "",
       isSoundEnabled: true,
@@ -86,6 +88,23 @@ export const useChatStore = create(
           console.log("Error in getUsers:", error.message);
         } finally {
           set({ isUsersLoading: false });
+        }
+      },
+
+      searchUsers: async (query) => {
+        if (!query || !query.trim()) {
+          set({ searchResults: [], isSearchingUsers: false });
+          return;
+        }
+        set({ isSearchingUsers: true });
+        try {
+          const res = await axiosInstance.get(`/users/search?query=${encodeURIComponent(query)}`);
+          set({ searchResults: res.data });
+        } catch (error) {
+          console.log("Error in searchUsers:", error.message);
+          set({ searchResults: [] });
+        } finally {
+          set({ isSearchingUsers: false });
         }
       },
 

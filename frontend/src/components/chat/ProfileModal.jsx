@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuthStore } from "../../store/useAuthStore";
-import { UserIcon, CameraIcon, XIcon, LockIcon, ShareIcon, CopyIcon, CloudUploadIcon, LogOutIcon, CheckCircle2Icon, CalendarIcon, PaletteIcon } from "lucide-react";
+import { useWallpaper } from "../../context/wallpaper";
+import { UserIcon, CameraIcon, XIcon, LockIcon, ShareIcon, CopyIcon, CloudUploadIcon, LogOutIcon, CheckCircle2Icon, CalendarIcon, PaletteIcon, UploadIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -12,6 +13,9 @@ import { axiosInstance } from "../../lib/axios";
 
 export function ProfileModal({ isOpen, onClose }) {
   const { authUser, checkAuth, logout } = useAuthStore();
+  const { setWallpaperId } = useWallpaper();
+  const customBgRef = useRef(null);
+
   const [fullName, setFullName] = useState(authUser?.fullName || "");
   const [username, setUsername] = useState(authUser?.username || "");
   const [bio, setBio] = useState(authUser?.bio || "");
@@ -36,6 +40,18 @@ export function ProfileModal({ isOpen, onClose }) {
     reader.onload = () => {
       setSelectedImg(reader.result);
     };
+  };
+
+  const handleCustomBgUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setWallpaperId(event.target.result);
+      toast.success("Custom background applied!");
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSaveProfile = async () => {
@@ -253,11 +269,26 @@ export function ProfileModal({ isOpen, onClose }) {
 
           <div className="bg-surface/50 border border-border rounded-xl p-5 flex flex-col items-center">
             <div className="font-semibold text-sm flex items-center gap-1.5 mb-2">
-              <CameraIcon className="size-4 text-accent" /> Chat Background
+              <CameraIcon className="size-4 text-accent" /> Chat Background Wallpaper
             </div>
-            <p className="text-[11px] text-muted mb-4 text-center">Choose a pattern or solid color for your chat conversations.</p>
-            <div className="bg-background/50 p-3 rounded-lg border border-border/40 w-full flex justify-center overflow-x-auto pb-4">
+            <p className="text-[11px] text-muted mb-4 text-center">Select a built-in backdrop pattern or upload your own image file.</p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
               <WallpaperPicker />
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                onClick={() => customBgRef.current?.click()}
+                className="text-xs font-semibold"
+              >
+                <UploadIcon className="size-3.5 mr-1.5" /> Upload Custom Image
+              </Button>
+              <input 
+                type="file" 
+                ref={customBgRef} 
+                className="hidden" 
+                accept="image/png, image/jpeg, image/webp, image/gif" 
+                onChange={handleCustomBgUpload} 
+              />
             </div>
           </div>
         </TabsContent>
