@@ -17,7 +17,7 @@ export function MessageList() {
   const messagesScrollRef = useScrollToBottom(activeConversationId, lastMessageId);
 
   return (
-    <div className="relative flex flex-1 flex-col overflow-hidden">
+    <div className="relative z-10 flex flex-1 flex-col overflow-hidden bg-transparent">
       {activeConversation ? (
         <div
           ref={messagesScrollRef}

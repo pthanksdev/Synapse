@@ -49,8 +49,34 @@ export function ProfileModal({ isOpen, onClose }) {
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      setWallpaperId(event.target.result);
-      toast.success("Custom background applied!");
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 1920;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        setWallpaperId(dataUrl);
+        toast.success("Custom background applied!");
+      };
+      img.onerror = () => {
+        setWallpaperId(event.target.result);
+        toast.success("Custom background applied!");
+      };
     };
     reader.readAsDataURL(file);
   };

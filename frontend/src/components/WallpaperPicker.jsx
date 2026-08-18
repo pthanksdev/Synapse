@@ -44,8 +44,41 @@ function WallpaperThumb({ wallpaper, selected, onSelect }) {
   );
 }
 
+function compressImage(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 1920;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", 0.85));
+      };
+      img.onerror = () => resolve(event.target.result);
+    };
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(file);
+  });
+}
+
 export function WallpaperPicker() {
-  const { wallpaperId, setWallpaperId } = useWallpaper();
+  const { wallpaperId, setWallpaperId, customWallpaper } = useWallpaper();
   const [, startTransition] = useTransition();
   const fileInputRef = useRef(null);
 
@@ -67,15 +100,14 @@ export function WallpaperPicker() {
     });
   };
 
-  const handleCustomUpload = (e) => {
+  const handleCustomUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      handleSelect(event.target.result);
-    };
-    reader.readAsDataURL(file);
+    const compressed = await compressImage(file);
+    if (compressed) {
+      handleSelect(compressed);
+    }
   };
 
   return (
@@ -104,12 +136,29 @@ export function WallpaperPicker() {
             type="file" 
             ref={fileInputRef} 
             className="hidden" 
-            accept="image/png, image/jpeg, image/webp" 
+            accept="image/png, image/jpeg, image/webp, image/gif" 
             onChange={handleCustomUpload} 
           />
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-8 pt-4 pr-2">
+        <div className="flex-1 overflow-y-auto space-y-6 pt-4 pr-2">
+          {customWallpaper && (
+            <section className="space-y-3">
+              <h3 className="text-sm font-medium text-zinc-400">Your Custom Background</h3>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                <WallpaperThumb
+                  wallpaper={{
+                    id: "custom",
+                    url: customWallpaper,
+                    label: "Custom Upload",
+                  }}
+                  selected={wallpaperId === "custom" || wallpaperId?.startsWith("data:image/")}
+                  onSelect={() => handleSelect("custom")}
+                />
+              </div>
+            </section>
+          )}
+
           {isLoading ? (
             <p className="text-xs text-zinc-400 text-center py-6">Loading wallpapers from server...</p>
           ) : (
