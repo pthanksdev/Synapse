@@ -4,11 +4,22 @@ import { useAuthStore } from "../../store/useAuthStore";
 import { useChatStore } from "../../store/useChatStore";
 import { APP_NAME, AppLogo } from "../AppLogo";
 
-import { LogOutIcon, MessageSquareIcon, PinIcon, PlusIcon, UsersIcon, ShieldAlertIcon, SettingsIcon, StarIcon } from "lucide-react";
+import {
+  LogOutIcon,
+  MessageSquareIcon,
+  PinIcon,
+  PlusIcon,
+  UsersIcon,
+  ShieldAlertIcon,
+  SettingsIcon,
+  StarIcon,
+  ArchiveIcon,
+} from "lucide-react";
 import { ConversationRow } from "./ConversationRow";
 import { CreateGroupModal } from "./CreateGroupModal";
 import { ProfileModal } from "./ProfileModal";
 import { StarredMessagesDrawer } from "./StarredMessagesDrawer";
+import { ArchivedChatsDrawer } from "./ArchivedChatsDrawer";
 import { StoriesBar } from "./StoriesBar";
 import { MobileBottomNav } from "./MobileBottomNav";
 import { useNavigate } from "react-router";
@@ -59,6 +70,7 @@ function ChatSidebar() {
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isStarredOpen, setIsStarredOpen] = useState(false);
+  const [isArchivedOpen, setIsArchivedOpen] = useState(false);
 
   const conversations = useChatStore((state) => state.conversations);
   const users = useChatStore((state) => state.users);
@@ -79,9 +91,11 @@ function ChatSidebar() {
   const pinnedChats = useChatStore((state) => state.pinnedChats);
   const togglePinConversation = useChatStore((state) => state.togglePinConversation);
 
+  const archivedChats = useChatStore((state) => state.archivedChats) || [];
+  const toggleArchiveConversation = useChatStore((state) => state.toggleArchiveConversation);
+
   const onlineUsers = useAuthStore((state) => state.onlineUsers);
   const authUser = useAuthStore((state) => state.authUser);
-  const logout = useAuthStore((state) => state.logout);
 
   const { activeConversationId, isLargeScreen } = useSelectedConversation();
 
@@ -113,8 +127,16 @@ function ChatSidebar() {
       )
     : conversationUsers;
 
-  const pinnedList = filteredConversations.filter((c) => pinnedChats.includes(c.id));
-  const unpinnedList = filteredConversations.filter((c) => !pinnedChats.includes(c.id));
+  // Filter active vs archived conversations
+  const activeConversations = filteredConversations.filter(
+    (c) => !archivedChats.includes(c.id)
+  );
+
+  const allChatsAndGroups = [...conversationUsers, ...allGroups];
+  const archivedList = allChatsAndGroups.filter((c) => archivedChats.includes(c.id));
+
+  const pinnedList = activeConversations.filter((c) => pinnedChats.includes(c.id));
+  const unpinnedList = activeConversations.filter((c) => !pinnedChats.includes(c.id));
 
   const filteredUsers = normalizedSearchQuery ? mappedSearchResults : allUsers;
 
@@ -139,6 +161,7 @@ function ChatSidebar() {
 
       <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
       <StarredMessagesDrawer isOpen={isStarredOpen} onClose={() => setIsStarredOpen(false)} />
+      <ArchivedChatsDrawer isOpen={isArchivedOpen} onClose={() => setIsArchivedOpen(false)} />
 
       <div className="shrink-0 border-b border-border px-2 pb-2 pt-2.5 sm:px-3 sm:pt-3">
         <div className="flex items-center gap-2 px-0.5 sm:gap-2.5 sm:px-1">
@@ -157,6 +180,19 @@ function ChatSidebar() {
                 <ShieldAlertIcon className="size-4.5" />
               </button>
             )}
+
+            <button
+              onClick={() => setIsArchivedOpen(true)}
+              title="Archived Chats"
+              className="relative rounded-lg p-1.5 text-accent hover:bg-surface"
+            >
+              <ArchiveIcon className="size-4.5" />
+              {archivedList.length > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 size-3.5 rounded-full bg-accent text-[9px] font-bold text-accent-foreground flex items-center justify-center shadow">
+                  {archivedList.length}
+                </span>
+              )}
+            </button>
 
             <button
               onClick={() => setIsStarredOpen(true)}
@@ -202,6 +238,24 @@ function ChatSidebar() {
 
         {/* Chats Panel */}
         <TabsContent value="chats" className="flex-1 overflow-x-hidden overflow-y-auto outline-none space-y-2 py-1">
+          {/* Archived Chats Header Banner */}
+          {archivedList.length > 0 && (
+            <div className="px-2 pt-1">
+              <button
+                onClick={() => setIsArchivedOpen(true)}
+                className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-muted hover:text-foreground hover:bg-surface/60 rounded-xl transition border border-border/50 bg-surface/20"
+              >
+                <div className="flex items-center gap-2">
+                  <ArchiveIcon className="size-4 text-accent" />
+                  <span>Archived Chats</span>
+                </div>
+                <span className="rounded-full bg-accent/15 text-accent text-[10px] px-2 py-0.5 font-bold">
+                  {archivedList.length}
+                </span>
+              </button>
+            </div>
+          )}
+
           {pinnedList.length > 0 && (
             <div className="px-3 pt-2">
               <div className="flex items-center gap-1 text-xs font-semibold text-muted mb-2">
@@ -209,19 +263,20 @@ function ChatSidebar() {
               </div>
               <div className="grid grid-cols-3 gap-2">
                 {pinnedList.map((chat) => (
-                  <button
-                    key={chat.id}
-                    onClick={() => setActiveConversationId(chat.id)}
-                    className="flex flex-col items-center justify-center rounded-xl p-2 transition hover:bg-surface"
-                  >
-                    <Avatar className="size-10 mb-1">
-                      <AvatarImage src={chat.peer.avatarUrl} />
-                      <AvatarFallback>{chat.peer.initials}</AvatarFallback>
-                    </Avatar>
-                    <span className="truncate text-xs font-medium w-full text-center">
-                      {chat.peer.name.split(" ")[0]}
-                    </span>
-                  </button>
+                  <div key={chat.id} className="relative group/pin">
+                    <button
+                      onClick={() => setActiveConversationId(chat.id)}
+                      className="w-full flex flex-col items-center justify-center rounded-xl p-2 transition hover:bg-surface"
+                    >
+                      <Avatar className="size-10 mb-1">
+                        <AvatarImage src={chat.peer.avatarUrl} />
+                        <AvatarFallback>{chat.peer.initials}</AvatarFallback>
+                      </Avatar>
+                      <span className="truncate text-xs font-medium w-full text-center">
+                        {chat.peer.name.split(" ")[0]}
+                      </span>
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>
@@ -229,7 +284,7 @@ function ChatSidebar() {
 
           {unpinnedList.length === 0 && pinnedList.length === 0 ? (
             <p className="px-4 py-6 text-center text-sm text-muted">
-              No conversations match your search.
+              {archivedList.length > 0 ? "All matching chats are in Archived Chats." : "No conversations match your search."}
             </p>
           ) : (
             unpinnedList.map((conversation) => (
@@ -239,16 +294,28 @@ function ChatSidebar() {
                   selected={conversation.id === activeConversationId}
                   onSelect={() => setActiveConversationId(conversation.id)}
                 />
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    togglePinConversation(conversation.id);
-                  }}
-                  title="Pin conversation"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 hidden group-hover:block rounded-lg p-1.5 bg-surface/80 text-muted hover:text-foreground shadow"
-                >
-                  <PinIcon className="size-3.5" />
-                </button>
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-1">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      togglePinConversation(conversation.id);
+                    }}
+                    title="Pin conversation"
+                    className="rounded-lg p-1.5 bg-surface/90 text-muted hover:text-foreground shadow"
+                  >
+                    <PinIcon className="size-3.5" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleArchiveConversation(conversation.id);
+                    }}
+                    title="Archive conversation"
+                    className="rounded-lg p-1.5 bg-surface/90 text-muted hover:text-accent shadow"
+                  >
+                    <ArchiveIcon className="size-3.5" />
+                  </button>
+                </div>
               </div>
             ))
           )}
@@ -269,12 +336,23 @@ function ChatSidebar() {
             <p className="px-4 py-6 text-center text-xs text-muted">You are not in any group chats yet.</p>
           ) : (
             filteredGroups.map((group) => (
-              <ConversationRow
-                key={group.id}
-                user={group}
-                selected={group.id === activeConversationId}
-                onSelect={() => setActiveGroup(groups.find((g) => g._id === group.id))}
-              />
+              <div key={group.id} className="group relative">
+                <ConversationRow
+                  user={group}
+                  selected={group.id === activeConversationId}
+                  onSelect={() => setActiveGroup(groups.find((g) => g._id === group.id))}
+                />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleArchiveConversation(group.id);
+                  }}
+                  title="Archive Group"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 hidden group-hover:block rounded-lg p-1.5 bg-surface/90 text-muted hover:text-accent shadow"
+                >
+                  <ArchiveIcon className="size-3.5" />
+                </button>
+              </div>
             ))
           )}
         </TabsContent>

@@ -119,3 +119,26 @@ export async function toggleBlockUser(req, res, next) {
     next(error);
   }
 }
+
+// Toggle archiving a conversation
+export async function toggleArchiveConversation(req, res, next) {
+  try {
+    const { id: targetId } = req.params;
+    const userId = req.user._id;
+
+    const user = await User.findById(userId);
+    if (!user.archivedChats) user.archivedChats = [];
+    const archiveIndex = user.archivedChats.indexOf(targetId);
+
+    if (archiveIndex > -1) {
+      user.archivedChats.splice(archiveIndex, 1);
+    } else {
+      user.archivedChats.push(targetId);
+    }
+
+    await user.save();
+    res.status(200).json({ archivedChats: user.archivedChats });
+  } catch (error) {
+    next(error);
+  }
+}

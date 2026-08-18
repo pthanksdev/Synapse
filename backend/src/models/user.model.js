@@ -52,6 +52,11 @@ const userSchema = new mongoose.Schema(
         ref: "Message",
       },
     ],
+    archivedChats: [
+      {
+        type: String,
+      },
+    ],
   },
   { timestamps: true }
 );

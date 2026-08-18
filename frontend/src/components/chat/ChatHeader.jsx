@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeftIcon, InfoIcon, Volume2Icon, VolumeXIcon, XIcon, PhoneIcon, VideoIcon, ShieldCheckIcon, SearchIcon } from "lucide-react";
+import { ChevronLeftIcon, InfoIcon, Volume2Icon, VolumeXIcon, XIcon, PhoneIcon, VideoIcon, ShieldCheckIcon, SearchIcon, ArchiveIcon } from "lucide-react";
 import { AppLogo } from "../AppLogo";
 import { AvatarWithOnlineIndicator } from "./AvatarWithOnlineIndicator";
 
@@ -19,6 +19,8 @@ export function ChatHeader({ onToggleDrawer }) {
   const setSoundEnabled = useChatStore((state) => state.setSoundEnabled);
   const searchQuery = useChatStore((state) => state.searchQuery);
   const setSearchQuery = useChatStore((state) => state.setSearchQuery);
+  const archivedChats = useChatStore((state) => state.archivedChats) || [];
+  const toggleArchiveConversation = useChatStore((state) => state.toggleArchiveConversation);
 
   const [isSearching, setIsSearching] = useState(false);
 
@@ -141,6 +143,18 @@ export function ChatHeader({ onToggleDrawer }) {
               onClick={() => initiateCall(activeConversationId, activeConversation.peer, true)}
             >
               <VideoIcon className="size-5" strokeWidth={2} />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              isIconOnly
+              className={archivedChats.includes(activeConversationId) ? "text-accent bg-accent/10" : "text-muted hover:text-accent"}
+              aria-label="Archive Chat"
+              title={archivedChats.includes(activeConversationId) ? "Unarchive Chat" : "Archive Chat"}
+              onClick={() => toggleArchiveConversation(activeConversationId)}
+            >
+              <ArchiveIcon className="size-4.5" strokeWidth={2} />
             </Button>
           </div>
         )}

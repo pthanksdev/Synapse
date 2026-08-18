@@ -13,6 +13,7 @@ export const useChatStore = create(
       groups: [],
       messages: [],
       pinnedChats: [],
+      archivedChats: [],
       blockedUsers: [],
       selectedUser: null,
       activeGroup: null,
@@ -292,6 +293,18 @@ export const useChatStore = create(
           toast.success("User block state updated");
         } catch (error) {
           toast.error("Failed to block user");
+        }
+      },
+
+      toggleArchiveConversation: async (conversationId) => {
+        try {
+          const res = await axiosInstance.post(`/users/archive/${conversationId}`);
+          const newArchived = res.data.archivedChats || [];
+          set({ archivedChats: newArchived });
+          const isArchived = newArchived.includes(conversationId);
+          toast.success(isArchived ? "Chat archived" : "Chat unarchived");
+        } catch (error) {
+          toast.error("Failed to update archive status");
         }
       },
 

@@ -3,6 +3,7 @@ import {
   getConversationsForSidebar,
   getUsersForSidebar,
   searchUsers,
+  toggleArchiveConversation,
   toggleBlockUser,
   togglePinConversation,
 } from "../controllers/user.controller.js";
@@ -16,5 +17,6 @@ router.get("/sidebar/conversations", protectRoute, getConversationsForSidebar);
 
 router.post("/pin/:id", protectRoute, togglePinConversation);
 router.post("/block/:id", protectRoute, toggleBlockUser);
+router.post("/archive/:id", protectRoute, toggleArchiveConversation);
 
 export default router;
