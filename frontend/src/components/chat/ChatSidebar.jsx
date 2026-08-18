@@ -302,7 +302,7 @@ function ChatSidebar() {
                 {archivedList.length > 0
                   ? "All matching chats are in Archived Chats."
                   : normalizedSearchQuery
-                  ? "No conversations match your search."
+                  ? `No existing chats for "${normalizedSearchQuery}".`
                   : "You don't have any open conversations yet."}
               </p>
               {!normalizedSearchQuery && (
@@ -349,6 +349,27 @@ function ChatSidebar() {
                 </div>
               </div>
             ))
+          )}
+
+          {/* Global User Search Results when searching by username */}
+          {normalizedSearchQuery && mappedSearchResults.length > 0 && (
+            <div className="pt-3 border-t border-border/60">
+              <div className="px-3 pb-1.5 text-xs font-semibold text-accent flex items-center gap-1.5">
+                <UserPlusIcon className="size-3.5" />
+                <span>Found on Synapse ({mappedSearchResults.length})</span>
+              </div>
+              {mappedSearchResults.map((user) => (
+                <ConversationRow
+                  key={user.conversationId}
+                  user={user}
+                  selected={user.conversationId === activeConversationId}
+                  onSelect={() => {
+                    setActiveConversationId(user.conversationId);
+                    setSearchQuery("");
+                  }}
+                />
+              ))}
+            </div>
           )}
         </TabsContent>
 

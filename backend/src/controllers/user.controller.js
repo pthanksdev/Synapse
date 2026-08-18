@@ -36,7 +36,8 @@ export async function searchUsers(req, res, next) {
       return res.status(200).json([]);
     }
 
-    const searchRegex = new RegExp(query.trim(), "i");
+    const cleanQuery = query.trim().replace(/^@/, "");
+    const searchRegex = new RegExp(cleanQuery, "i");
     const users = await User.find({
       _id: { $ne: loggedInUserId },
       $or: [
