@@ -18,6 +18,8 @@ import {
   CropIcon,
   Wand2Icon,
   MessageSquareIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import toast from "react-hot-toast";
@@ -55,6 +57,7 @@ export function StoriesBar() {
 
   // Popover & Text Story Modal
   const [isChoiceOpen, setIsChoiceOpen] = useState(false);
+  const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0 });
   const [isTextModalOpen, setIsTextModalOpen] = useState(false);
   const [textStoryContent, setTextStoryContent] = useState("");
   const [selectedBg, setSelectedBg] = useState(GRADIENT_PRESETS[0].value);
@@ -73,6 +76,8 @@ export function StoriesBar() {
   const [viewerMuted, setViewerMuted] = useState(false);
 
   const fileInputRef = useRef(null);
+  const storyBtnRef = useRef(null);
+  const scrollTrackRef = useRef(null);
   const authUser = useAuthStore((state) => state.authUser);
 
   const fetchStories = async () => {
@@ -99,6 +104,32 @@ export function StoriesBar() {
     fetchStories();
   }, []);
 
+  // Mouse wheel horizontal scrolling logic
+  const handleTrackWheel = (e) => {
+    if (scrollTrackRef.current) {
+      e.preventDefault();
+      scrollTrackRef.current.scrollLeft += e.deltaY;
+    }
+  };
+
+  const scrollTrack = (direction) => {
+    if (scrollTrackRef.current) {
+      const amount = direction === "left" ? -180 : 180;
+      scrollTrackRef.current.scrollBy({ left: amount, behavior: "smooth" });
+    }
+  };
+
+  const toggleChoicePopover = () => {
+    if (!isChoiceOpen && storyBtnRef.current) {
+      const rect = storyBtnRef.current.getBoundingClientRect();
+      setPopoverPos({
+        top: rect.bottom + 8,
+        left: Math.max(12, Math.min(rect.left, window.innerWidth - 220)),
+      });
+    }
+    setIsChoiceOpen(!isChoiceOpen);
+  };
+
   const handleSelectMediaFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -116,7 +147,6 @@ export function StoriesBar() {
     setIsChoiceOpen(false);
     setIsMediaEditorOpen(true);
 
-    // Reset file input value
     e.target.value = "";
   };
 
@@ -130,18 +160,15 @@ export function StoriesBar() {
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
 
-        // Target story dimensions 1080 x 1920 (9:16 ratio)
         const targetW = 1080;
         const targetH = 1920;
 
         canvas.width = targetW;
         canvas.height = targetH;
 
-        // Background fill for contain mode
         ctx.fillStyle = "#000000";
         ctx.fillRect(0, 0, targetW, targetH);
 
-        // Apply filter
         ctx.filter = selectedFilter.filterCss;
 
         ctx.save();
@@ -159,7 +186,6 @@ export function StoriesBar() {
           drawW = img.width * scale;
           drawH = img.height * scale;
         } else {
-          // Cover mode
           const scale = Math.max(targetW / srcW, targetH / srcH);
           drawW = img.width * scale;
           drawH = img.height * scale;
@@ -168,7 +194,6 @@ export function StoriesBar() {
         ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
         ctx.restore();
 
-        // Render caption text onto canvas if provided
         if (mediaCaption.trim()) {
           ctx.font = "bold 44px sans-serif";
           ctx.fillStyle = "#ffffff";
@@ -197,7 +222,6 @@ export function StoriesBar() {
         formData.append("mediaType", "video");
         formData.append("isMuted", isMuted ? "true" : "false");
       } else {
-        // Process image with canvas
         const blob = await processImageCanvas();
         formData.append("media", blob, "story_edited.jpg");
         formData.append("mediaType", "image");
@@ -241,7 +265,7 @@ export function StoriesBar() {
   };
 
   return (
-    <div className="w-full border-b border-border/60 bg-surface/20 p-2.5">
+    <div className="relative w-full border-b border-border/60 bg-surface/20 p-2.5 group/stories">
       <input
         type="file"
         ref={fileInputRef}
@@ -250,12 +274,34 @@ export function StoriesBar() {
         className="hidden"
       />
 
-      <div className="flex items-center gap-3 overflow-x-auto no-scrollbar">
+      {/* Optional Left/Right scroll buttons for desktop */}
+      <button
+        onClick={() => scrollTrack("left")}
+        className="absolute left-1 top-1/2 -translate-y-1/2 z-10 size-6 rounded-full bg-background/80 text-foreground border border-border shadow flex items-center justify-center opacity-0 group-hover/stories:opacity-100 transition hover:bg-surface"
+        title="Scroll Left"
+      >
+        <ChevronLeftIcon className="size-3.5" />
+      </button>
+
+      <button
+        onClick={() => scrollTrack("right")}
+        className="absolute right-1 top-1/2 -translate-y-1/2 z-10 size-6 rounded-full bg-background/80 text-foreground border border-border shadow flex items-center justify-center opacity-0 group-hover/stories:opacity-100 transition hover:bg-surface"
+        title="Scroll Right"
+      >
+        <ChevronRightIcon className="size-3.5" />
+      </button>
+
+      {/* Stories Scrollable Track */}
+      <div
+        ref={scrollTrackRef}
+        onWheel={handleTrackWheel}
+        className="flex items-center gap-3 overflow-x-auto no-scrollbar scroll-smooth py-0.5 px-1 touch-pan-x"
+      >
         {/* Post Story Button (Regular Users Only) */}
         {authUser?.role !== "admin" && (
-          <div className="relative shrink-0">
+          <div className="shrink-0" ref={storyBtnRef}>
             <button
-              onClick={() => setIsChoiceOpen(!isChoiceOpen)}
+              onClick={toggleChoicePopover}
               className="flex flex-col items-center gap-1 shrink-0 group"
               disabled={isUploading}
             >
@@ -272,50 +318,6 @@ export function StoriesBar() {
                 {isUploading ? "Posting..." : "Your Story"}
               </span>
             </button>
-
-            {/* Story Type Choice Popover Menu anchored at Your Story button */}
-            {isChoiceOpen && (
-              <>
-                {/* Backdrop click listener to close popover */}
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setIsChoiceOpen(false)}
-                />
-                <div className="absolute top-14 left-0 z-50 w-52 rounded-2xl border border-border bg-background/95 p-1.5 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1">
-                  <button
-                    onClick={() => {
-                      setIsChoiceOpen(false);
-                      fileInputRef.current?.click();
-                    }}
-                    className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-semibold hover:bg-surface transition text-foreground group"
-                  >
-                    <div className="size-7 rounded-lg bg-accent/15 text-accent flex items-center justify-center shrink-0 group-hover:scale-110 transition">
-                      <ImageIcon className="size-4" />
-                    </div>
-                    <div className="flex flex-col text-left">
-                      <span className="font-bold text-foreground">Photo or Video</span>
-                      <span className="text-[10px] text-muted">Upload & edit media</span>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setIsChoiceOpen(false);
-                      setIsTextModalOpen(true);
-                    }}
-                    className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-semibold hover:bg-surface transition text-foreground group"
-                  >
-                    <div className="size-7 rounded-lg bg-purple-500/15 text-purple-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition">
-                      <TypeIcon className="size-4" />
-                    </div>
-                    <div className="flex flex-col text-left">
-                      <span className="font-bold text-foreground">Text Story</span>
-                      <span className="text-[10px] text-muted">Colors & gradients</span>
-                    </div>
-                  </button>
-                </div>
-              </>
-            )}
           </div>
         )}
 
@@ -341,6 +343,54 @@ export function StoriesBar() {
           </button>
         ))}
       </div>
+
+      {/* Story Type Choice Popover Menu anchored at Your Story button via Portal */}
+      {isChoiceOpen &&
+        createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-[99998]"
+              onClick={() => setIsChoiceOpen(false)}
+            />
+            <div
+              style={{ top: `${popoverPos.top}px`, left: `${popoverPos.left}px` }}
+              className="fixed z-[99999] w-52 rounded-2xl border border-border bg-background/95 p-1.5 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-1"
+            >
+              <button
+                onClick={() => {
+                  setIsChoiceOpen(false);
+                  fileInputRef.current?.click();
+                }}
+                className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-semibold hover:bg-surface transition text-foreground group"
+              >
+                <div className="size-7 rounded-lg bg-accent/15 text-accent flex items-center justify-center shrink-0 group-hover:scale-110 transition">
+                  <ImageIcon className="size-4" />
+                </div>
+                <div className="flex flex-col text-left">
+                  <span className="font-bold text-foreground">Photo or Video</span>
+                  <span className="text-[10px] text-muted">Upload & edit media</span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsChoiceOpen(false);
+                  setIsTextModalOpen(true);
+                }}
+                className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-semibold hover:bg-surface transition text-foreground group"
+              >
+                <div className="size-7 rounded-lg bg-purple-500/15 text-purple-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition">
+                  <TypeIcon className="size-4" />
+                </div>
+                <div className="flex flex-col text-left">
+                  <span className="font-bold text-foreground">Text Story</span>
+                  <span className="text-[10px] text-muted">Colors & gradients</span>
+                </div>
+              </button>
+            </div>
+          </>,
+          document.body
+        )}
 
       {/* Media Story Editor Modal Portal */}
       {isMediaEditorOpen && selectedMedia &&
