@@ -98,6 +98,8 @@ export function useSelectedConversation() {
   const groups = useChatStore((state) => state.groups);
   const conversations = useChatStore((state) => state.conversations);
   const users = useChatStore((state) => state.users);
+  const searchResults = useChatStore((state) => state.searchResults);
+  const storeSelectedUser = useChatStore((state) => state.selectedUser);
   const messages = useChatStore((state) => state.messages);
 
   const authUser = useAuthStore((state) => state.authUser);
@@ -105,11 +107,13 @@ export function useSelectedConversation() {
 
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
 
-  const currentGroup = activeGroup || (activeConversationId ? groups.find((g) => g._id === activeConversationId) : null);
+  const currentGroup = activeGroup || (activeConversationId ? groups.find((g) => (g._id || g.id) === activeConversationId) : null);
 
   const selectedUser = !currentGroup && activeConversationId
-    ? users.find((user) => user._id === activeConversationId) ||
-      conversations.find((user) => user._id === activeConversationId)
+    ? users.find((user) => (user._id || user.id) === activeConversationId) ||
+      conversations.find((user) => (user._id || user.id) === activeConversationId) ||
+      searchResults.find((user) => (user._id || user.id) === activeConversationId) ||
+      storeSelectedUser
     : null;
 
   const activeConversation = currentGroup

@@ -388,22 +388,29 @@ export const useChatStore = create(
       setActiveConversationId: (activeConversationId) => {
         if (activeConversationId) get().clearUnreadCount();
 
-        const group = get().groups.find((g) => g._id === activeConversationId);
+        const group = get().groups.find((g) => (g._id || g.id) === activeConversationId);
         if (group) {
           get().setActiveGroup(group);
           return;
         }
 
-        set((state) => ({
+        const foundUser =
+          get().users.find((user) => (user._id || user.id) === activeConversationId) ||
+          get().conversations.find((user) => (user._id || user.id) === activeConversationId) ||
+          get().searchResults.find((user) => (user._id || user.id) === activeConversationId) ||
+          null;
+
+        set({
           activeConversationId,
           activeGroup: null,
-          selectedUser:
-            state.users.find((user) => user._id === activeConversationId) ||
-            state.conversations.find((user) => user._id === activeConversationId) ||
-            null,
-          messages: activeConversationId ? state.messages : [],
+          selectedUser: foundUser,
+          messages: [],
           hasMoreMessages: true,
-        }));
+        });
+
+        if (activeConversationId) {
+          get().getMessages(activeConversationId);
+        }
       },
 
       setSearchQuery: (searchQuery) => set({ searchQuery }),

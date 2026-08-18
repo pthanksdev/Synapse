@@ -18,7 +18,7 @@ export default function ChatArea() {
 
   return (
     <main
-      className={`relative flex flex-1 flex-col overflow-hidden bg-background ${
+      className={`relative flex flex-1 flex-col overflow-hidden bg-background h-dvh w-full ${
         !isLargeScreen && !activeConversationId ? "hidden lg:flex" : "flex"
       }`}
       style={hasWallpaper ? frameStyle : undefined}
