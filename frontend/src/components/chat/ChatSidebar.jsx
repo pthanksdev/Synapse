@@ -7,6 +7,8 @@ import { APP_NAME, AppLogo } from "../AppLogo";
 import {
   LogOutIcon,
   MessageSquareIcon,
+  MessageSquarePlusIcon,
+  UserPlusIcon,
   PinIcon,
   PlusIcon,
   UsersIcon,
@@ -76,6 +78,8 @@ function ChatSidebar() {
   const users = useChatStore((state) => state.users);
   const groups = useChatStore((state) => state.groups);
   const getGroups = useChatStore((state) => state.getGroups);
+  const getUsers = useChatStore((state) => state.getUsers);
+  const getConversations = useChatStore((state) => state.getConversations);
 
   const searchQuery = useChatStore((state) => state.searchQuery);
   const setSearchQuery = useChatStore((state) => state.setSearchQuery);
@@ -101,7 +105,9 @@ function ChatSidebar() {
 
   useEffect(() => {
     getGroups();
-  }, [getGroups]);
+    getUsers();
+    getConversations();
+  }, [getGroups, getUsers, getConversations]);
 
   const normalizedSearchQuery = searchQuery.trim().toLowerCase();
 
@@ -180,6 +186,14 @@ function ChatSidebar() {
                 <ShieldAlertIcon className="size-4.5" />
               </button>
             )}
+
+            <button
+              onClick={() => setSidebarTab("users")}
+              title="Start New Conversation"
+              className="rounded-lg p-1.5 text-accent hover:bg-surface hover:text-accent-hover transition flex items-center gap-1"
+            >
+              <MessageSquarePlusIcon className="size-4.5" />
+            </button>
 
             <button
               onClick={() => setIsArchivedOpen(true)}
@@ -283,9 +297,26 @@ function ChatSidebar() {
           )}
 
           {unpinnedList.length === 0 && pinnedList.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-muted">
-              {archivedList.length > 0 ? "All matching chats are in Archived Chats." : "No conversations match your search."}
-            </p>
+            <div className="flex flex-col items-center justify-center px-4 py-8 text-center space-y-3">
+              <p className="text-xs text-muted">
+                {archivedList.length > 0
+                  ? "All matching chats are in Archived Chats."
+                  : normalizedSearchQuery
+                  ? "No conversations match your search."
+                  : "You don't have any open conversations yet."}
+              </p>
+              {!normalizedSearchQuery && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setSidebarTab("users")}
+                  className="text-xs font-semibold rounded-xl"
+                >
+                  <UserPlusIcon className="size-3.5 mr-1.5 text-accent" />
+                  Find People to Message
+                </Button>
+              )}
+            </div>
           ) : (
             unpinnedList.map((conversation) => (
               <div key={conversation.id} className="group relative">
