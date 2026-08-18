@@ -273,29 +273,58 @@ export function StoriesBar() {
               </span>
             </button>
 
-            {/* Story Type Choice Popover */}
-            {isChoiceOpen && (
-              <div className="absolute top-14 left-0 z-50 w-48 rounded-2xl border border-border bg-background/95 p-1.5 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
-                <button
-                  onClick={() => {
-                    setIsChoiceOpen(false);
-                    fileInputRef.current?.click();
-                  }}
-                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold hover:bg-surface transition text-foreground"
-                >
-                  <ImageIcon className="size-4 text-accent" /> Photo or Video
-                </button>
-                <button
-                  onClick={() => {
-                    setIsChoiceOpen(false);
-                    setIsTextModalOpen(true);
-                  }}
-                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold hover:bg-surface transition text-foreground"
-                >
-                  <TypeIcon className="size-4 text-purple-400" /> Text Story
-                </button>
-              </div>
-            )}
+            {/* Story Type Choice Popup Modal */}
+            {isChoiceOpen &&
+              createPortal(
+                <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-150">
+                  <div className="relative w-full max-w-xs rounded-3xl border border-border bg-background p-5 shadow-2xl flex flex-col space-y-4 animate-in zoom-in-95 duration-150">
+                    <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                      <h3 className="text-sm font-bold text-foreground">Create Story</h3>
+                      <button
+                        onClick={() => setIsChoiceOpen(false)}
+                        className="rounded-full p-1 text-muted hover:bg-surface hover:text-foreground transition"
+                      >
+                        <XIcon className="size-4" />
+                      </button>
+                    </div>
+
+                    <div className="flex flex-col gap-2.5">
+                      <button
+                        onClick={() => {
+                          setIsChoiceOpen(false);
+                          fileInputRef.current?.click();
+                        }}
+                        className="flex items-center gap-3 rounded-2xl border border-border bg-surface/40 p-3 text-left hover:bg-surface hover:border-accent/40 transition group"
+                      >
+                        <div className="size-10 rounded-xl bg-accent/15 text-accent flex items-center justify-center group-hover:scale-105 transition shrink-0">
+                          <ImageIcon className="size-5" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-foreground">Photo or Video</span>
+                          <span className="text-[10px] text-muted">Upload and edit media stories</span>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setIsChoiceOpen(false);
+                          setIsTextModalOpen(true);
+                        }}
+                        className="flex items-center gap-3 rounded-2xl border border-border bg-surface/40 p-3 text-left hover:bg-surface hover:border-purple-500/40 transition group"
+                      >
+                        <div className="size-10 rounded-xl bg-purple-500/15 text-purple-400 flex items-center justify-center group-hover:scale-105 transition shrink-0">
+                          <TypeIcon className="size-5" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-foreground">Text Story</span>
+                          <span className="text-[10px] text-muted">Type text with colors & gradients</span>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                </div>,
+                document.body
+              )}
           </div>
         )}
 
