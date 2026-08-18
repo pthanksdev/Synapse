@@ -113,7 +113,13 @@ export const useAuthStore = create((set, get) => ({
   },
 
   connectSocket: (user) => {
-    if (!user || get().socket?.connected) return;
+    if (!user) return;
+    const existingSocket = get().socket;
+    if (existingSocket?.connected) {
+      useChatStore.getState().subscribeToMessages();
+      useCallStore.getState().initCallListeners();
+      return;
+    }
 
     const token = localStorage.getItem("synapse_access_token");
 
@@ -124,6 +130,16 @@ export const useAuthStore = create((set, get) => ({
     });
 
     set({ socket });
+
+    const setupListeners = () => {
+      useChatStore.getState().subscribeToMessages();
+      useCallStore.getState().initCallListeners();
+    };
+
+    socket.on("connect", setupListeners);
+    if (socket.connected) {
+      setupListeners();
+    }
 
     socket.on("getOnlineUsers", (userIds) => {
       set({ onlineUsers: userIds });

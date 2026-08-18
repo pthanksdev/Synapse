@@ -322,17 +322,20 @@ export const useChatStore = create(
         socket.off("message:unsent");
 
         socket.on("newMessage", (newMessage) => {
-          const activeId = get().activeConversationId;
           const authUser = useAuthStore.getState().authUser;
+          const activeId = get().activeConversationId;
+          const senderIdStr = String(newMessage.senderId?._id || newMessage.senderId);
+          const receiverIdStr = String(newMessage.receiverId?._id || newMessage.receiverId);
+          const activeIdStr = String(activeId);
 
-          if (
-            activeId &&
+          const isFromActiveUser =
             !get().activeGroup &&
-            (String(newMessage.senderId) === String(activeId) ||
-              String(newMessage.receiverId) === String(activeId))
-          ) {
+            activeId &&
+            (senderIdStr === activeIdStr || receiverIdStr === activeIdStr);
+
+          if (isFromActiveUser) {
             set({ messages: [...get().messages, newMessage] });
-          } else if (String(newMessage.receiverId) === String(authUser?._id)) {
+          } else if (receiverIdStr === String(authUser?._id)) {
             const newCount = get().unreadCount + 1;
             set({ unreadCount: newCount });
             document.title = `(${newCount}) Synapse`;
@@ -342,7 +345,8 @@ export const useChatStore = create(
 
         socket.on("group:newMessage", (newMessage) => {
           const activeId = get().activeConversationId;
-          if (activeId && get().activeGroup && String(newMessage.groupId) === String(activeId)) {
+          const groupIdStr = String(newMessage.groupId?._id || newMessage.groupId);
+          if (activeId && get().activeGroup && groupIdStr === String(activeId)) {
             set({ messages: [...get().messages, newMessage] });
           }
         });
@@ -386,7 +390,12 @@ export const useChatStore = create(
       },
 
       setActiveConversationId: (activeConversationId) => {
-        if (activeConversationId) get().clearUnreadCount();
+        if (!activeConversationId) {
+          set({ activeConversationId: null, activeGroup: null, selectedUser: null, messages: [] });
+          return;
+        }
+
+        get().clearUnreadCount();
 
         const group = get().groups.find((g) => (g._id || g.id) === activeConversationId);
         if (group) {
@@ -394,11 +403,12 @@ export const useChatStore = create(
           return;
         }
 
+        const currentSelected = get().selectedUser;
         const foundUser =
           get().users.find((user) => (user._id || user.id) === activeConversationId) ||
           get().conversations.find((user) => (user._id || user.id) === activeConversationId) ||
           get().searchResults.find((user) => (user._id || user.id) === activeConversationId) ||
-          null;
+          (currentSelected && (currentSelected._id || currentSelected.id) === activeConversationId ? currentSelected : null);
 
         set({
           activeConversationId,

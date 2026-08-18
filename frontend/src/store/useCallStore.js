@@ -43,29 +43,41 @@ export const useCallStore = create((set, get) => ({
     });
 
     socket.on("webrtc:offer", async ({ senderId, offer }) => {
-      if (get().peerId !== senderId) return;
+      if (String(get().peerId) !== String(senderId)) return;
       const pc = get().peerConnection;
       if (pc) {
-        await pc.setRemoteDescription(new RTCSessionDescription(offer));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        socket.emit("webrtc:answer", { targetId: senderId, answer });
+        try {
+          await pc.setRemoteDescription(new RTCSessionDescription(offer));
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          socket.emit("webrtc:answer", { targetId: senderId, answer });
+        } catch (err) {
+          console.error("Error setting remote description or creating answer:", err);
+        }
       }
     });
 
     socket.on("webrtc:answer", async ({ senderId, answer }) => {
-      if (get().peerId !== senderId) return;
+      if (String(get().peerId) !== String(senderId)) return;
       const pc = get().peerConnection;
       if (pc) {
-        await pc.setRemoteDescription(new RTCSessionDescription(answer));
+        try {
+          await pc.setRemoteDescription(new RTCSessionDescription(answer));
+        } catch (err) {
+          console.error("Error setting remote answer description:", err);
+        }
       }
     });
 
     socket.on("webrtc:ice-candidate", async ({ senderId, candidate }) => {
-      if (get().peerId !== senderId) return;
+      if (String(get().peerId) !== String(senderId)) return;
       const pc = get().peerConnection;
       if (pc && candidate) {
-        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (err) {
+          console.error("Error adding ICE candidate:", err);
+        }
       }
     });
   },

@@ -45,7 +45,7 @@ io.use((socket, next) => {
 });
 
 io.on("connection", (socket) => {
-  const userId = socket.userId;
+  const userId = socket.userId ? String(socket.userId) : null;
 
   if (userId) {
     userSocketMap[userId] = socket.id;

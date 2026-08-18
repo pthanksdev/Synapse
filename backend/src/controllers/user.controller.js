@@ -5,6 +5,7 @@ import Message from "../models/message.model.js";
 export async function getUsersForSidebar(req, res, next) {
   try {
     const loggedInUserId = req.user._id;
+    const isReqAdmin = req.user.role === "admin";
     const messages = await Message.find({
       $or: [{ senderId: loggedInUserId }, { receiverId: loggedInUserId }],
     }).select("senderId receiverId");
@@ -19,7 +20,12 @@ export async function getUsersForSidebar(req, res, next) {
       }
     });
 
-    const filteredUsers = await User.find({ _id: { $in: Array.from(userIds) } });
+    const userFilter = { _id: { $in: Array.from(userIds) } };
+    if (!isReqAdmin) {
+      userFilter.role = { $ne: "admin" };
+    }
+
+    const filteredUsers = await User.find(userFilter);
     res.status(200).json(filteredUsers);
   } catch (error) {
     next(error);
@@ -30,6 +36,7 @@ export async function getUsersForSidebar(req, res, next) {
 export async function searchUsers(req, res, next) {
   try {
     const loggedInUserId = req.user._id;
+    const isReqAdmin = req.user.role === "admin";
     const { query } = req.query;
 
     if (!query || !query.trim()) {
@@ -38,14 +45,21 @@ export async function searchUsers(req, res, next) {
 
     const cleanQuery = query.trim().replace(/^@/, "");
     const searchRegex = new RegExp(cleanQuery, "i");
-    const users = await User.find({
+
+    const filter = {
       _id: { $ne: loggedInUserId },
       $or: [
         { username: searchRegex },
         { email: searchRegex },
         { fullName: searchRegex },
       ],
-    }).limit(20);
+    };
+
+    if (!isReqAdmin) {
+      filter.role = { $ne: "admin" };
+    }
+
+    const users = await User.find(filter).limit(20);
 
     res.status(200).json(users);
   } catch (error) {

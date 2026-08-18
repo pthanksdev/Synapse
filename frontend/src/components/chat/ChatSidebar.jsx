@@ -30,21 +30,23 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
 
-function mapUserForList(user, onlineUsers) {
+function mapUserForList(user, onlineUsers = []) {
+  const userIdStr = String(user._id || user.id || "");
+  const isOnline = onlineUsers.map(String).includes(userIdStr);
   return {
-    conversationId: user._id,
-    id: user._id,
+    conversationId: user._id || user.id,
+    id: user._id || user.id,
     name: user.fullName,
     username: user.username,
     avatarUrl: user.profilePic,
     initials: getInitials(user.fullName || "User"),
-    isOnline: onlineUsers.includes(user._id),
+    isOnline,
     peer: {
       name: user.fullName,
       username: user.username,
       avatarUrl: user.profilePic,
       initials: getInitials(user.fullName || "User"),
-      isOnline: onlineUsers.includes(user._id),
+      isOnline,
     },
   };
 }
