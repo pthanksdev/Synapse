@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { axiosInstance } from "../../lib/axios";
 import { useAuthStore } from "../../store/useAuthStore";
@@ -52,21 +52,43 @@ const IMAGE_FILTERS = [
 
 export function StoriesBar() {
   const [stories, setStories] = useState([]);
-  const [activeStory, setActiveStory] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  // Popover & Text Story Modal
+  // Group stories by User ID
+  const userStoriesGrouped = useMemo(() => {
+    const map = {};
+    stories.forEach((story) => {
+      const uId = story.userId?._id || story.userId;
+      if (!uId) return;
+
+      if (!map[uId]) {
+        map[uId] = {
+          userId: uId,
+          user: story.userId,
+          stories: [],
+        };
+      }
+      map[uId].stories.push(story);
+    });
+    return Object.values(map);
+  }, [stories]);
+
+  // Story Viewer Carousel State
+  const [activeUserIndex, setActiveUserIndex] = useState(null);
+  const [activeStoryIndex, setActiveStoryIndex] = useState(0);
+
+  // Popover & Text Story Modal State
   const [isChoiceOpen, setIsChoiceOpen] = useState(false);
   const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0 });
   const [isTextModalOpen, setIsTextModalOpen] = useState(false);
   const [textStoryContent, setTextStoryContent] = useState("");
   const [selectedBg, setSelectedBg] = useState(GRADIENT_PRESETS[0].value);
 
-  // Media Story Editor Modal
-  const [selectedMedia, setSelectedMedia] = useState(null); // { file, url, isVideo }
+  // Media Story Editor Modal State
+  const [selectedMedia, setSelectedMedia] = useState(null);
   const [isMediaEditorOpen, setIsMediaEditorOpen] = useState(false);
-  const [fitMode, setFitMode] = useState("cover"); // "cover" | "contain"
-  const [rotation, setRotation] = useState(0); // 0, 90, 180, 270
+  const [fitMode, setFitMode] = useState("cover");
+  const [rotation, setRotation] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState(IMAGE_FILTERS[0]);
   const [isMuted, setIsMuted] = useState(false);
@@ -75,10 +97,16 @@ export function StoriesBar() {
   // Local audio override in story viewer
   const [viewerMuted, setViewerMuted] = useState(false);
 
+  // Touch Swipe tracking
+  const touchStartX = useRef(0);
+
   const fileInputRef = useRef(null);
   const storyBtnRef = useRef(null);
   const scrollTrackRef = useRef(null);
   const authUser = useAuthStore((state) => state.authUser);
+
+  const currentGroup = activeUserIndex !== null ? userStoriesGrouped[activeUserIndex] : null;
+  const activeStory = currentGroup ? currentGroup.stories[activeStoryIndex] : null;
 
   const fetchStories = async () => {
     try {
@@ -89,22 +117,82 @@ export function StoriesBar() {
     }
   };
 
+  useEffect(() => {
+    fetchStories();
+  }, []);
+
+  // Story Navigation Handlers
+  const handleNextStory = () => {
+    if (!currentGroup) return;
+    if (activeStoryIndex < currentGroup.stories.length - 1) {
+      setActiveStoryIndex((prev) => prev + 1);
+    } else if (activeUserIndex < userStoriesGrouped.length - 1) {
+      setActiveUserIndex((prev) => prev + 1);
+      setActiveStoryIndex(0);
+    } else {
+      // Reached the end of all users' stories
+      setActiveUserIndex(null);
+      setActiveStoryIndex(0);
+    }
+  };
+
+  const handlePrevStory = () => {
+    if (!currentGroup) return;
+    if (activeStoryIndex > 0) {
+      setActiveStoryIndex((prev) => prev - 1);
+    } else if (activeUserIndex > 0) {
+      const prevGroup = userStoriesGrouped[activeUserIndex - 1];
+      setActiveUserIndex((prev) => prev - 1);
+      setActiveStoryIndex(prevGroup.stories.length - 1);
+    } else {
+      // Re-trigger first story
+      setActiveStoryIndex(0);
+    }
+  };
+
+  // Timer auto-advance for text / photo stories (5 seconds)
+  useEffect(() => {
+    if (!activeStory) return;
+
+    const isVideo = activeStory.mediaType === "video" || activeStory.mediaUrl?.match(/\.(mp4|webm|mov)$/i);
+    if (!isVideo) {
+      const timer = setTimeout(() => {
+        handleNextStory();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [activeUserIndex, activeStoryIndex, activeStory]);
+
+  // Keyboard Left / Right Navigation
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (activeUserIndex === null) return;
+      if (e.key === "ArrowRight") handleNextStory();
+      if (e.key === "ArrowLeft") handlePrevStory();
+      if (e.key === "Escape") setActiveUserIndex(null);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeUserIndex, activeStoryIndex, currentGroup]);
+
   const handleDeleteStory = async (storyId) => {
     try {
       await axiosInstance.delete(`/stories/${storyId}`);
       toast.success("Story deleted");
-      setActiveStory(null);
       fetchStories();
+
+      // If current story deleted, advance or close
+      if (currentGroup?.stories.length === 1) {
+        setActiveUserIndex(null);
+      } else if (activeStoryIndex >= currentGroup.stories.length - 1) {
+        setActiveStoryIndex((prev) => Math.max(0, prev - 1));
+      }
     } catch (error) {
       toast.error("Failed to delete story");
     }
   };
 
-  useEffect(() => {
-    fetchStories();
-  }, []);
-
-  // Mouse wheel horizontal scrolling logic
+  // Horizontal mouse wheel scroll
   const handleTrackWheel = (e) => {
     if (scrollTrackRef.current) {
       e.preventDefault();
@@ -150,7 +238,6 @@ export function StoriesBar() {
     e.target.value = "";
   };
 
-  // Canvas processing for image crop/rotate/filter export
   const processImageCanvas = async () => {
     return new Promise((resolve) => {
       const img = new Image();
@@ -274,7 +361,7 @@ export function StoriesBar() {
         className="hidden"
       />
 
-      {/* Optional Left/Right scroll buttons for desktop */}
+      {/* Left / Right Scroll Controls */}
       <button
         onClick={() => scrollTrack("left")}
         className="absolute left-1 top-1/2 -translate-y-1/2 z-10 size-6 rounded-full bg-background/80 text-foreground border border-border shadow flex items-center justify-center opacity-0 group-hover/stories:opacity-100 transition hover:bg-surface"
@@ -291,7 +378,7 @@ export function StoriesBar() {
         <ChevronRightIcon className="size-3.5" />
       </button>
 
-      {/* Stories Scrollable Track */}
+      {/* Stories Track */}
       <div
         ref={scrollTrackRef}
         onWheel={handleTrackWheel}
@@ -321,30 +408,38 @@ export function StoriesBar() {
           </div>
         )}
 
-        {/* Stories List */}
-        {stories.map((story) => (
+        {/* Stories List - Grouped by User */}
+        {userStoriesGrouped.map((group, groupIdx) => (
           <button
-            key={story._id}
+            key={group.userId}
             onClick={() => {
-              setActiveStory(story);
-              setViewerMuted(story.isMuted);
+              setActiveUserIndex(groupIdx);
+              setActiveStoryIndex(0);
+              setViewerMuted(group.stories[0]?.isMuted || false);
             }}
-            className="flex flex-col items-center gap-1 shrink-0 group"
+            className="flex flex-col items-center gap-1 shrink-0 group relative"
           >
-            <div className="size-12 rounded-full p-0.5 bg-gradient-to-tr from-accent via-purple-500 to-pink-500 group-hover:scale-105 transition">
+            <div className="relative size-12 rounded-full p-0.5 bg-gradient-to-tr from-accent via-purple-500 to-pink-500 group-hover:scale-105 transition">
               <Avatar className="size-full border-2 border-background">
-                <AvatarImage src={story.userId?.profilePic} />
-                <AvatarFallback>{story.userId?.fullName?.[0]}</AvatarFallback>
+                <AvatarImage src={group.user?.profilePic} />
+                <AvatarFallback>{group.user?.fullName?.[0]}</AvatarFallback>
               </Avatar>
+
+              {/* Story Count Badge if user posted multiple stories */}
+              {group.stories.length > 1 && (
+                <span className="absolute -top-1 -right-1 size-4 rounded-full bg-accent text-accent-foreground text-[9px] font-extrabold flex items-center justify-center border border-background shadow">
+                  {group.stories.length}
+                </span>
+              )}
             </div>
             <span className="text-[10px] font-medium text-foreground truncate max-w-[56px]">
-              {story.userId?.fullName?.split(" ")[0]}
+              {group.user?.fullName?.split(" ")[0]}
             </span>
           </button>
         ))}
       </div>
 
-      {/* Story Type Choice Popover Menu anchored at Your Story button via Portal */}
+      {/* Story Type Choice Popover via Portal */}
       {isChoiceOpen &&
         createPortal(
           <>
@@ -440,7 +535,6 @@ export function StoriesBar() {
                   />
                 )}
 
-                {/* Caption overlay preview */}
                 {mediaCaption.trim() && (
                   <div className="absolute bottom-4 left-4 right-4 text-center">
                     <span className="inline-block rounded-xl bg-black/60 backdrop-blur-md px-3 py-1.5 text-xs font-bold text-white border border-white/10 drop-shadow">
@@ -452,7 +546,6 @@ export function StoriesBar() {
 
               {/* Editing Controls */}
               <div className="space-y-3">
-                {/* Aspect Fit & Crop Controls */}
                 <div className="flex items-center justify-between text-xs text-zinc-300">
                   <span className="font-semibold flex items-center gap-1.5">
                     <CropIcon className="size-4 text-accent" /> Fit Mode:
@@ -479,7 +572,6 @@ export function StoriesBar() {
                   </div>
                 </div>
 
-                {/* Video Audio Mute Control */}
                 {selectedMedia.isVideo && (
                   <div className="flex items-center justify-between text-xs text-zinc-300">
                     <span className="font-semibold flex items-center gap-1.5">
@@ -500,7 +592,6 @@ export function StoriesBar() {
                   </div>
                 )}
 
-                {/* Image Rotate & Flip Controls */}
                 {!selectedMedia.isVideo && (
                   <div className="flex items-center justify-between text-xs text-zinc-300">
                     <span className="font-semibold">Transform:</span>
@@ -525,7 +616,6 @@ export function StoriesBar() {
                   </div>
                 )}
 
-                {/* Filters for Image */}
                 {!selectedMedia.isVideo && (
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-zinc-400">Color Filter</label>
@@ -548,7 +638,6 @@ export function StoriesBar() {
                   </div>
                 )}
 
-                {/* Caption Input */}
                 <div className="space-y-1">
                   <label className="text-xs font-semibold text-zinc-400 flex items-center gap-1">
                     <MessageSquareIcon className="size-3.5" /> Add Caption (Optional)
@@ -595,14 +684,12 @@ export function StoriesBar() {
                 </button>
               </div>
 
-              {/* Story Live Preview Box */}
               <div className={`relative aspect-[9/16] max-h-72 w-full rounded-2xl bg-gradient-to-br ${selectedBg} p-6 flex items-center justify-center shadow-inner overflow-hidden border border-white/20`}>
                 <p className="text-center font-bold text-white text-lg leading-snug drop-shadow break-words max-w-full">
                   {textStoryContent || "Type your story message here..."}
                 </p>
               </div>
 
-              {/* Gradient Color Picker */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-zinc-400">Background Color</label>
                 <div className="flex items-center gap-2 overflow-x-auto pb-1">
@@ -620,7 +707,6 @@ export function StoriesBar() {
                 </div>
               </div>
 
-              {/* Text Area */}
               <div>
                 <textarea
                   rows={3}
@@ -648,15 +734,52 @@ export function StoriesBar() {
           document.body
         )}
 
-      {/* Story View Modal (Portal to body) */}
-      {activeStory &&
+      {/* Story View Modal (Portal with Auto-Play & Swipe Carousel) */}
+      {activeStory && currentGroup &&
         createPortal(
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/95 backdrop-blur-md animate-in fade-in duration-200 p-4">
-            <div className="relative w-full max-w-sm aspect-[9/16] rounded-3xl overflow-hidden bg-black shadow-2xl flex flex-col border border-white/10">
-              <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/95 backdrop-blur-md animate-in fade-in duration-200 p-4 select-none">
+            {/* Story Card Container */}
+            <div
+              className="relative w-full max-w-sm aspect-[9/16] rounded-3xl overflow-hidden bg-black shadow-2xl flex flex-col border border-white/10 group/player"
+              onTouchStart={(e) => (touchStartX.current = e.touches[0].clientX)}
+              onTouchEnd={(e) => {
+                const diffX = e.changedTouches[0].clientX - touchStartX.current;
+                if (diffX < -40) handleNextStory();
+                if (diffX > 40) handlePrevStory();
+              }}
+            >
+              {/* Segmented Top Progress Bars */}
+              <div className="absolute top-3 left-3 right-3 z-30 flex items-center gap-1.5">
+                {currentGroup.stories.map((storyItem, idx) => (
+                  <div
+                    key={storyItem._id}
+                    className="h-1 flex-1 rounded-full bg-white/30 overflow-hidden"
+                  >
+                    <div
+                      className={`h-full bg-white transition-all duration-150 ${
+                        idx < activeStoryIndex ? "w-full" : idx === activeStoryIndex ? "w-full animate-story-bar" : "w-0"
+                      }`}
+                      style={{
+                        animationDuration:
+                          idx === activeStoryIndex &&
+                          storyItem.mediaType !== "video" &&
+                          !storyItem.mediaUrl?.match(/\.(mp4|webm|mov)$/i)
+                            ? "5s"
+                            : "0s",
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Action Header Controls */}
+              <div className="absolute top-6 right-4 z-30 flex items-center gap-2">
                 {(activeStory.mediaType === "video" || activeStory.mediaUrl?.match(/\.(mp4|webm|mov)$/i)) && (
                   <button
-                    onClick={() => setViewerMuted(!viewerMuted)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setViewerMuted(!viewerMuted);
+                    }}
                     title={viewerMuted ? "Unmute Sound" : "Mute Sound"}
                     className="size-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/90 transition border border-white/20"
                   >
@@ -665,7 +788,10 @@ export function StoriesBar() {
                 )}
                 {(activeStory.userId?._id === authUser?._id || activeStory.userId === authUser?._id || authUser?.role === "admin") && (
                   <button
-                    onClick={() => handleDeleteStory(activeStory._id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteStory(activeStory._id);
+                    }}
                     title="Delete Story"
                     className="size-8 rounded-full bg-red-500/80 text-white flex items-center justify-center hover:bg-red-600 transition shadow"
                   >
@@ -673,21 +799,30 @@ export function StoriesBar() {
                   </button>
                 )}
                 <button
-                  onClick={() => setActiveStory(null)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveUserIndex(null);
+                  }}
                   className="size-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/90 transition border border-white/20"
                 >
                   <XIcon className="size-5" />
                 </button>
               </div>
 
-              <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
+              {/* User Header Details */}
+              <div className="absolute top-6 left-4 z-30 flex items-center gap-2">
                 <Avatar className="size-8 border border-white/20">
-                  <AvatarImage src={activeStory.userId?.profilePic} />
-                  <AvatarFallback>{activeStory.userId?.fullName?.[0]}</AvatarFallback>
+                  <AvatarImage src={currentGroup.user?.profilePic} />
+                  <AvatarFallback>{currentGroup.user?.fullName?.[0]}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col">
-                  <span className="text-white font-semibold text-xs drop-shadow">
-                    {activeStory.userId?.fullName}
+                  <span className="text-white font-semibold text-xs drop-shadow flex items-center gap-1">
+                    {currentGroup.user?.fullName}
+                    {currentGroup.stories.length > 1 && (
+                      <span className="text-[10px] text-white/60 font-normal">
+                        ({activeStoryIndex + 1}/{currentGroup.stories.length})
+                      </span>
+                    )}
                   </span>
                   <span className="text-[10px] text-white/70 drop-shadow flex items-center gap-1">
                     Story • 24h Expiry
@@ -695,6 +830,39 @@ export function StoriesBar() {
                   </span>
                 </div>
               </div>
+
+              {/* Tap Navigation Click Areas (Left 30% = Previous, Right 70% = Next) */}
+              <div
+                onClick={handlePrevStory}
+                className="absolute inset-y-0 left-0 w-1/3 z-20 cursor-pointer"
+                title="Previous Story"
+              />
+              <div
+                onClick={handleNextStory}
+                className="absolute inset-y-0 right-0 w-2/3 z-20 cursor-pointer"
+                title="Next Story"
+              />
+
+              {/* Desktop Chevron Navigation Buttons */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePrevStory();
+                }}
+                className="absolute left-2 top-1/2 -translate-y-1/2 z-30 size-9 rounded-full bg-black/50 text-white flex items-center justify-center opacity-0 group-hover/player:opacity-100 transition hover:bg-black/80 border border-white/20"
+              >
+                <ChevronLeftIcon className="size-5" />
+              </button>
+
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleNextStory();
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 z-30 size-9 rounded-full bg-black/50 text-white flex items-center justify-center opacity-0 group-hover/player:opacity-100 transition hover:bg-black/80 border border-white/20"
+              >
+                <ChevronRightIcon className="size-5" />
+              </button>
 
               {/* Story Content: Text vs Video vs Image */}
               {activeStory.type === "text" ? (
@@ -705,15 +873,17 @@ export function StoriesBar() {
                 </div>
               ) : activeStory.mediaType === "video" || activeStory.mediaUrl?.match(/\.(mp4|webm|mov)$/i) ? (
                 <video
+                  key={activeStory._id}
                   src={activeStory.mediaUrl}
                   autoPlay
-                  loop
                   muted={viewerMuted}
                   playsInline
+                  onEnded={handleNextStory}
                   className={`size-full ${activeStory.fitMode === "contain" ? "object-contain bg-black" : "object-cover"}`}
                 />
               ) : (
                 <img
+                  key={activeStory._id}
                   src={activeStory.mediaUrl}
                   alt="Story"
                   className={`size-full ${activeStory.fitMode === "contain" ? "object-contain bg-black" : "object-cover"}`}
@@ -722,7 +892,7 @@ export function StoriesBar() {
 
               {/* Caption Overlay */}
               {activeStory.caption && (
-                <div className="absolute bottom-6 left-4 right-4 z-20 text-center">
+                <div className="absolute bottom-6 left-4 right-4 z-30 text-center pointer-events-none">
                   <span className="inline-block rounded-2xl bg-black/70 backdrop-blur-md px-4 py-2 text-xs font-semibold text-white border border-white/10 shadow-lg">
                     {activeStory.caption}
                   </span>

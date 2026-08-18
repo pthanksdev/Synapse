@@ -54,3 +54,13 @@
     transform: translateX(100%);
   }
 }
+
+@keyframes story-bar {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
