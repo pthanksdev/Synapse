@@ -150,6 +150,11 @@ export function MessageBubble({ message }) {
               : "rounded-bl-md bg-surface"
           }`}
         >
+          {/* Group Sender Name */}
+          {!isOwnMessage && message.senderName && (
+            <p className="text-[11px] font-bold text-accent mb-1 drop-shadow-sm">{message.senderName}</p>
+          )}
+
           {/* Quoted Message Preview */}
           {message.replyTo && (
             <div className="mb-2 rounded-lg bg-black/10 p-2 text-xs opacity-90">
