@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { LockIcon, MailIcon, UserIcon, AtSignIcon, ArrowRightIcon, Loader2Icon } from "lucide-react";
+import { LockIcon, MailIcon, UserIcon, AtSignIcon, ArrowRightIcon, Loader2Icon, EyeIcon, EyeOffIcon } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 
 export function AuthForms() {
   const [mode, setMode] = useState("login"); // 'login' | 'register'
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     username: "",
@@ -125,13 +126,21 @@ export function AuthForms() {
           <div className="relative">
             <LockIcon className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
             <Input
-              type="password"
+              type={showPassword ? "text" : "password"}
               required
               placeholder="••••••••"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="pl-10 h-10"
+              className="pl-10 pr-10 h-10"
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition p-0.5 rounded"
+              title={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
+            </button>
           </div>
         </div>
 

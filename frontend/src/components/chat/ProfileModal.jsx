@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useWallpaper } from "../../context/wallpaper";
-import { UserIcon, CameraIcon, XIcon, LockIcon, ShareIcon, CopyIcon, CloudUploadIcon, LogOutIcon, CheckCircle2Icon, CalendarIcon, PaletteIcon, UploadIcon } from "lucide-react";
+import { UserIcon, CameraIcon, XIcon, LockIcon, ShareIcon, CopyIcon, CloudUploadIcon, LogOutIcon, CheckCircle2Icon, CalendarIcon, PaletteIcon, UploadIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -20,6 +20,7 @@ export function ProfileModal({ isOpen, onClose }) {
   const [username, setUsername] = useState(authUser?.username || "");
   const [bio, setBio] = useState(authUser?.bio || "");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [selectedImg, setSelectedImg] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isBackingUp, setIsBackingUp] = useState(false);
@@ -169,12 +170,23 @@ export function ProfileModal({ isOpen, onClose }) {
             <label className="font-semibold text-muted mb-1 block flex items-center gap-1">
               <LockIcon className="size-3 text-accent" /> New Password (Optional)
             </label>
-            <Input
-              type="password"
-              placeholder="Leave blank to keep current password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder="Leave blank to keep current password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="pr-9"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition p-0.5 rounded"
+                title={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
+              </button>
+            </div>
           </div>
         </div>
 
