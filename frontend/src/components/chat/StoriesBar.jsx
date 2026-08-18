@@ -50,7 +50,7 @@ const IMAGE_FILTERS = [
   { id: "cool", label: "Cool", filterCss: "saturate(110%) hue-rotate(15deg)" },
 ];
 
-// WhatsApp-Style Segmented Story Ring
+// WhatsApp-Style Segmented Story Ring with Last Post Preview in Center
 function WhatsAppSegmentedRing({ group, viewedMap }) {
   const stories = group.stories;
   const count = stories.length;
@@ -61,12 +61,57 @@ function WhatsAppSegmentedRing({ group, viewedMap }) {
   const gap = count > 1 ? (count > 4 ? 4 : 6) : 0;
   const segmentLength = (circumference - count * gap) / count;
 
+  const lastStory = stories[stories.length - 1];
   const allViewed = stories.every((s) => viewedMap[s._id]);
+
+  const renderLastStoryPreview = () => {
+    if (!lastStory) {
+      return (
+        <Avatar className="size-full">
+          <AvatarImage src={group.user?.profilePic} />
+          <AvatarFallback>{group.user?.fullName?.[0]}</AvatarFallback>
+        </Avatar>
+      );
+    }
+
+    if (lastStory.type === "text") {
+      return (
+        <div
+          className={`size-full bg-gradient-to-br ${
+            lastStory.bgColor || "from-indigo-600 to-pink-600"
+          } flex items-center justify-center p-1 text-center`}
+        >
+          <span className="text-[7px] font-bold text-white leading-tight line-clamp-2 drop-shadow-sm select-none">
+            {lastStory.text}
+          </span>
+        </div>
+      );
+    }
+
+    if (lastStory.mediaType === "video" || lastStory.mediaUrl?.match(/\.(mp4|webm|mov)$/i)) {
+      return (
+        <video
+          src={lastStory.mediaUrl}
+          muted
+          preload="metadata"
+          className="size-full object-cover pointer-events-none"
+        />
+      );
+    }
+
+    return (
+      <img
+        src={lastStory.mediaUrl}
+        alt="Preview"
+        className="size-full object-cover pointer-events-none"
+      />
+    );
+  };
 
   return (
     <div className="relative size-12 flex items-center justify-center">
       <svg
-        className="absolute -inset-0.5 size-[52px] -rotate-90 pointer-events-none"
+        className="absolute -inset-0.5 size-[52px] -rotate-90 pointer-events-none z-10"
         viewBox={`0 0 ${size} ${size}`}
       >
         {stories.map((story, i) => {
@@ -91,9 +136,20 @@ function WhatsAppSegmentedRing({ group, viewedMap }) {
           );
         })}
       </svg>
-      <Avatar className={`size-10 border-2 transition-opacity ${allViewed ? "border-transparent opacity-75" : "border-background"}`}>
+
+      {/* Center Story Content Preview */}
+      <div
+        className={`size-10 rounded-full overflow-hidden border-2 transition-opacity ${
+          allViewed ? "border-transparent opacity-75" : "border-background"
+        }`}
+      >
+        {renderLastStoryPreview()}
+      </div>
+
+      {/* Tiny User Avatar Badge at Bottom-Right */}
+      <Avatar className="absolute -bottom-0.5 -right-0.5 size-4 border border-background z-20 shadow">
         <AvatarImage src={group.user?.profilePic} />
-        <AvatarFallback>{group.user?.fullName?.[0]}</AvatarFallback>
+        <AvatarFallback className="text-[8px]">{group.user?.fullName?.[0]}</AvatarFallback>
       </Avatar>
     </div>
   );
@@ -293,11 +349,57 @@ export function StoriesBar() {
     setIsChoiceOpen(!isChoiceOpen);
   };
 
-  const handleSelectMediaFile = (e) => {
+  // Helper to extract video duration in seconds
+  const getVideoDuration = (file) => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement("video");
+      video.preload = "metadata";
+      video.onloadedmetadata = () => {
+        URL.revokeObjectURL(video.src);
+        resolve(video.duration);
+      };
+      video.onerror = () => {
+        reject("Failed to read video duration");
+      };
+      video.src = URL.createObjectURL(file);
+    });
+  };
+
+  const handleSelectMediaFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const isVideo = file.type ? file.type.startsWith("video") : false;
+
+    if (isVideo) {
+      try {
+        const duration = await getVideoDuration(file);
+
+        // Single video max 90s (1.30 min)
+        if (duration > 90) {
+          toast.error("Video stories cannot exceed 1 minute 30 seconds!");
+          e.target.value = "";
+          return;
+        }
+
+        // Check if user already has an active video story
+        const myUserStories = stories.filter(
+          (s) => (s.userId?._id || s.userId) === authUser?._id
+        );
+        const hasExistingVideo = myUserStories.some(
+          (s) => s.mediaType === "video" || s.mediaUrl?.match(/\.(mp4|webm|mov)$/i)
+        );
+
+        if (hasExistingVideo && duration > 50) {
+          toast.error("Subsequent video stories cannot exceed 50 seconds!");
+          e.target.value = "";
+          return;
+        }
+      } catch (err) {
+        console.error("Video duration check failed:", err);
+      }
+    }
+
     const url = URL.createObjectURL(file);
 
     setSelectedMedia({ file, url, isVideo });
@@ -483,7 +585,7 @@ export function StoriesBar() {
           </div>
         )}
 
-        {/* Stories List - Grouped by User with WhatsApp Segmented Rings */}
+        {/* Stories List - Grouped by User with WhatsApp Segmented Rings and Last Story Preview */}
         {userStoriesGrouped.map((group, groupIdx) => {
           const allViewed = group.stories.every((s) => viewedMap[s._id]);
           return (

@@ -24,7 +24,7 @@ export function MobileBottomNav({ onOpenProfile }) {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-border bg-background/95 backdrop-blur-md px-2 py-1.5 lg:hidden shadow-lg">
+    <nav className="fixed bottom-3 left-3 right-3 z-40 flex items-center justify-around border border-border/80 bg-background/95 backdrop-blur-xl px-2 py-1.5 lg:hidden shadow-2xl rounded-2xl">
       <button
         onClick={() => handleTabClick("chats")}
         className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition ${
