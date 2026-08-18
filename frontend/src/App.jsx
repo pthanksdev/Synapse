@@ -1,14 +1,15 @@
 import { WallpaperProvider } from "./context/WallpaperContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { Navigate, Route, Routes } from "react-router";
+import { lazy, Suspense, useEffect } from "react";
 import ChatPage from "./pages/ChatPage";
 import AuthPage from "./pages/AuthPage";
-import AdminPage from "./pages/AdminPage";
 import GroupJoinPage from "./pages/GroupJoinPage";
 import PageLoader from "./components/PageLoader";
 import { useAuthStore } from "./store/useAuthStore";
 import { useChatStore } from "./store/useChatStore";
-import { useEffect } from "react";
+
+const AdminPage = lazy(() => import("./pages/AdminPage"));
 
 import { Toaster } from "react-hot-toast";
 
@@ -66,7 +67,15 @@ function App() {
           />
           <Route
             path="/admin"
-            element={authUser?.role === "admin" ? <AdminPage /> : <Navigate to={authUser ? "/" : "/auth"} replace />}
+            element={
+              authUser?.role === "admin" ? (
+                <Suspense fallback={<PageLoader />}>
+                  <AdminPage />
+                </Suspense>
+              ) : (
+                <Navigate to={authUser ? "/" : "/auth"} replace />
+              )
+            }
           />
         </Routes>
         <Toaster />

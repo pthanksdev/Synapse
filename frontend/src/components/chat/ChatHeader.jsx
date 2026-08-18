@@ -3,9 +3,7 @@ import { ChevronLeftIcon, InfoIcon, Volume2Icon, VolumeXIcon, XIcon, PhoneIcon, 
 import { AppLogo } from "../AppLogo";
 import { AvatarWithOnlineIndicator } from "./AvatarWithOnlineIndicator";
 
-import { ThemePresetPicker } from "../ThemePresetPicker";
 import { ThemeToggle } from "../ThemeToggle";
-import { WallpaperPicker } from "../WallpaperPicker";
 
 import { useChatStore } from "../../store/useChatStore";
 import { useAuthStore } from "../../store/useAuthStore";
@@ -146,11 +144,6 @@ export function ChatHeader({ onToggleDrawer }) {
             </Button>
           </div>
         )}
-
-        <div className="hidden min-[400px]:contents">
-          <WallpaperPicker />
-          <ThemePresetPicker />
-        </div>
 
         <ThemeToggle />
 

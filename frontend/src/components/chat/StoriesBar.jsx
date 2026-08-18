@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { axiosInstance } from "../../lib/axios";
 import { useAuthStore } from "../../store/useAuthStore";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
@@ -108,51 +109,53 @@ export function StoriesBar() {
         ))}
       </div>
 
-      {/* Story View Modal */}
-      {activeStory && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="relative w-full max-w-sm aspect-[9/16] rounded-3xl overflow-hidden bg-black shadow-2xl flex flex-col">
-            <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
-              {(activeStory.userId?._id === authUser?._id || activeStory.userId === authUser?._id || authUser?.role === "admin") && (
+      {/* Story View Modal (Portal to body to hover any screen) */}
+      {activeStory &&
+        createPortal(
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/95 backdrop-blur-md animate-in fade-in duration-200 p-4">
+            <div className="relative w-full max-w-sm aspect-[9/16] rounded-3xl overflow-hidden bg-black shadow-2xl flex flex-col border border-white/10">
+              <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+                {(activeStory.userId?._id === authUser?._id || activeStory.userId === authUser?._id || authUser?.role === "admin") && (
+                  <button
+                    onClick={() => handleDeleteStory(activeStory._id)}
+                    title="Delete Story"
+                    className="size-8 rounded-full bg-red-500/80 text-white flex items-center justify-center hover:bg-red-600 transition shadow"
+                  >
+                    <Trash2Icon className="size-4" />
+                  </button>
+                )}
                 <button
-                  onClick={() => handleDeleteStory(activeStory._id)}
-                  title="Delete Story"
-                  className="size-8 rounded-full bg-red-500/80 text-white flex items-center justify-center hover:bg-red-600 transition shadow"
+                  onClick={() => setActiveStory(null)}
+                  className="size-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/90 transition border border-white/20"
                 >
-                  <Trash2Icon className="size-4" />
+                  <XIcon className="size-5" />
                 </button>
-              )}
-              <button
-                onClick={() => setActiveStory(null)}
-                className="size-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/80 transition"
-              >
-                <XIcon className="size-5" />
-              </button>
-            </div>
-
-            <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
-              <Avatar className="size-8 border border-white/20">
-                <AvatarImage src={activeStory.userId?.profilePic} />
-                <AvatarFallback>{activeStory.userId?.fullName?.[0]}</AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col">
-                <span className="text-white font-semibold text-xs drop-shadow">
-                  {activeStory.userId?.fullName}
-                </span>
-                <span className="text-[10px] text-white/70 drop-shadow">
-                  Story • 24h Expiry
-                </span>
               </div>
-            </div>
 
-            <img
-              src={activeStory.mediaUrl}
-              alt="Story"
-              className="size-full object-cover"
-            />
-          </div>
-        </div>
-      )}
+              <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
+                <Avatar className="size-8 border border-white/20">
+                  <AvatarImage src={activeStory.userId?.profilePic} />
+                  <AvatarFallback>{activeStory.userId?.fullName?.[0]}</AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col">
+                  <span className="text-white font-semibold text-xs drop-shadow">
+                    {activeStory.userId?.fullName}
+                  </span>
+                  <span className="text-[10px] text-white/70 drop-shadow">
+                    Story • 24h Expiry
+                  </span>
+                </div>
+              </div>
+
+              <img
+                src={activeStory.mediaUrl}
+                alt="Story"
+                className="size-full object-cover"
+              />
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

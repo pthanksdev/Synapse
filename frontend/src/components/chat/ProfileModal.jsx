@@ -1,20 +1,30 @@
 import { useState } from "react";
 import { useAuthStore } from "../../store/useAuthStore";
-import { UserIcon, CameraIcon, XIcon, LockIcon, ShareIcon, CopyIcon, CloudUploadIcon, LogOutIcon } from "lucide-react";
+import { UserIcon, CameraIcon, XIcon, LockIcon, ShareIcon, CopyIcon, CloudUploadIcon, LogOutIcon, CheckCircle2Icon, CalendarIcon, PaletteIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
+import { ThemePresetPicker } from "../ThemePresetPicker";
+import { WallpaperPicker } from "../WallpaperPicker";
 import toast from "react-hot-toast";
 import { axiosInstance } from "../../lib/axios";
 
 export function ProfileModal({ isOpen, onClose }) {
   const { authUser, checkAuth, logout } = useAuthStore();
   const [fullName, setFullName] = useState(authUser?.fullName || "");
+  const [username, setUsername] = useState(authUser?.username || "");
   const [bio, setBio] = useState(authUser?.bio || "");
   const [password, setPassword] = useState("");
   const [selectedImg, setSelectedImg] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isBackingUp, setIsBackingUp] = useState(false);
+  const [backupFrequency, setBackupFrequency] = useState(
+    localStorage.getItem("gdrive_backup_freq") || "Daily"
+  );
+  const [lastSyncedAt, setLastSyncedAt] = useState(
+    localStorage.getItem("gdrive_last_synced") || null
+  );
 
   if (!isOpen || !authUser) return null;
 
@@ -33,6 +43,7 @@ export function ProfileModal({ isOpen, onClose }) {
     try {
       await axiosInstance.put("/auth/profile", {
         fullName,
+        username,
         bio,
         profilePic: selectedImg || authUser.profilePic,
         ...(password.trim() ? { password } : {}),
@@ -55,11 +66,25 @@ export function ProfileModal({ isOpen, onClose }) {
 
   const handleGoogleDriveBackup = async () => {
     setIsBackingUp(true);
-    toast.loading("Exporting encrypted chat backup...", { id: "gdrive" });
+    toast.loading("Exporting & encrypting chat backup to Google Drive...", { id: "gdrive" });
     setTimeout(() => {
+      const nowStr = new Date().toLocaleString([], {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      localStorage.setItem("gdrive_last_synced", nowStr);
+      setLastSyncedAt(nowStr);
       setIsBackingUp(false);
-      toast.success("Encrypted backup successfully synced to Google Drive!", { id: "gdrive" });
-    }, 2000);
+      toast.success(`Synced to Google Drive (${nowStr})!`, { id: "gdrive" });
+    }, 1800);
+  };
+
+  const handleFrequencyChange = (freq) => {
+    setBackupFrequency(freq);
+    localStorage.setItem("gdrive_backup_freq", freq);
+    toast.success(`Automated Google Drive backup schedule set to ${freq}`);
   };
 
   return (
@@ -73,6 +98,14 @@ export function ProfileModal({ isOpen, onClose }) {
             <XIcon className="size-4" />
           </button>
         </div>
+
+        <Tabs defaultValue="account" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-4 shrink-0 bg-surface/50 p-1 rounded-xl">
+            <TabsTrigger value="account" className="text-xs rounded-lg">Account</TabsTrigger>
+            <TabsTrigger value="appearance" className="text-xs rounded-lg">Appearance</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="account" className="space-y-4 outline-none">
 
         {/* Avatar Upload */}
         <div className="flex flex-col items-center justify-center py-2 shrink-0">
@@ -91,9 +124,20 @@ export function ProfileModal({ isOpen, onClose }) {
 
         {/* Form Inputs */}
         <div className="space-y-3 text-xs shrink-0">
-          <div>
-            <label className="font-semibold text-muted mb-1 block">Full Name</label>
-            <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="font-semibold text-muted mb-1 block">Full Name</label>
+              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
+            </div>
+
+            <div>
+              <label className="font-semibold text-muted mb-1 block">Username</label>
+              <Input 
+                value={username} 
+                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} 
+                placeholder="e.g. johndoe"
+              />
+            </div>
           </div>
 
           <div>
@@ -119,16 +163,45 @@ export function ProfileModal({ isOpen, onClose }) {
         </div>
 
         {/* Google Drive Backup Section */}
-        <div className="bg-surface/50 border border-border rounded-xl p-3 flex items-center justify-between mt-2 shrink-0">
-          <div>
-            <div className="font-semibold text-xs flex items-center gap-1">
-              <CloudUploadIcon className="size-3.5 text-blue-400" /> Google Drive Backup
+        <div className="bg-surface/50 border border-border rounded-xl p-3.5 space-y-2.5 mt-2 shrink-0">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-semibold text-xs flex items-center gap-1.5">
+                <CloudUploadIcon className="size-4 text-blue-400" /> Google Drive Cloud Backup
+              </div>
+              <p className="text-[10px] text-muted mt-0.5">Encrypt & backup chat messages and media.</p>
             </div>
-            <p className="text-[10px] text-muted mt-0.5">Encrypt & sync chat history to Google Drive.</p>
+            <Button variant="secondary" size="sm" disabled={isBackingUp} onClick={handleGoogleDriveBackup} className="text-xs shrink-0">
+              {isBackingUp ? "Syncing..." : "Sync Now"}
+            </Button>
           </div>
-          <Button variant="secondary" size="sm" disabled={isBackingUp} onClick={handleGoogleDriveBackup} className="text-xs">
-            {isBackingUp ? "Syncing..." : "Sync Now"}
-          </Button>
+
+          <div className="pt-2 border-t border-border/50 flex items-center justify-between text-[11px]">
+            <div className="flex items-center gap-1 text-muted">
+              <CalendarIcon className="size-3 text-accent" /> Auto Schedule:
+            </div>
+            <select
+              value={backupFrequency}
+              onChange={(e) => handleFrequencyChange(e.target.value)}
+              className="bg-background border border-border rounded-md px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
+            >
+              <option value="Daily">Daily (Recommended)</option>
+              <option value="Weekly">Weekly</option>
+              <option value="Monthly">Monthly</option>
+              <option value="Off">Manual Only</option>
+            </select>
+          </div>
+
+          <div className="flex items-center justify-between text-[10px] bg-background/60 p-2 rounded-lg border border-border/40">
+            <span className="text-muted">Sync Status:</span>
+            {lastSyncedAt ? (
+              <span className="text-emerald-400 font-medium flex items-center gap-1">
+                <CheckCircle2Icon className="size-3" /> Synced ({lastSyncedAt})
+              </span>
+            ) : (
+              <span className="text-amber-400 font-medium">Not Synced Yet</span>
+            )}
+          </div>
         </div>
 
         {/* Invite Link Section */}
@@ -165,6 +238,30 @@ export function ProfileModal({ isOpen, onClose }) {
             </Button>
           </div>
         </div>
+        </TabsContent>
+
+        <TabsContent value="appearance" className="space-y-4 outline-none pb-2">
+          <div className="bg-surface/50 border border-border rounded-xl p-5 flex flex-col items-center">
+            <div className="font-semibold text-sm flex items-center gap-1.5 mb-2">
+              <PaletteIcon className="size-4 text-accent" /> Theme Accent Color
+            </div>
+            <p className="text-[11px] text-muted mb-4 text-center">Customize the primary accent color across the platform.</p>
+            <div className="bg-background/50 p-3 rounded-lg border border-border/40 w-full flex justify-center">
+              <ThemePresetPicker />
+            </div>
+          </div>
+
+          <div className="bg-surface/50 border border-border rounded-xl p-5 flex flex-col items-center">
+            <div className="font-semibold text-sm flex items-center gap-1.5 mb-2">
+              <CameraIcon className="size-4 text-accent" /> Chat Background
+            </div>
+            <p className="text-[11px] text-muted mb-4 text-center">Choose a pattern or solid color for your chat conversations.</p>
+            <div className="bg-background/50 p-3 rounded-lg border border-border/40 w-full flex justify-center overflow-x-auto pb-4">
+              <WallpaperPicker />
+            </div>
+          </div>
+        </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

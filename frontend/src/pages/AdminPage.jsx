@@ -15,6 +15,9 @@ import { useNavigate } from "react-router";
 import toast from "react-hot-toast";
 import { Button } from "../components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
+import { ProfileModal } from "../components/chat/ProfileModal";
+import { SettingsIcon } from "lucide-react";
+import { useWallpaper } from "../context/wallpaper";
 
 import { AdminOverviewTab } from "../components/admin/AdminOverviewTab";
 import { AdminTelemetryTab } from "../components/admin/AdminTelemetryTab";
@@ -28,6 +31,8 @@ import { AdminWallpapersTab } from "../components/admin/AdminWallpapersTab";
 export default function AdminPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const { frameStyle } = useWallpaper();
 
   // Data states
   const [stats, setStats] = useState({
@@ -222,7 +227,7 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-background text-foreground p-4 sm:p-8">
+    <div className="min-h-screen w-full bg-background text-foreground p-4 sm:p-8" style={frameStyle}>
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border pb-4">
@@ -240,11 +245,14 @@ export default function AdminPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowProfileModal(true)} className="gap-1.5 text-xs">
+              <SettingsIcon className="size-4 text-accent" /> Settings
+            </Button>
             <Button variant="outline" size="sm" onClick={() => navigate("/chat")} className="gap-1.5 text-xs">
-              <MessageSquareIcon className="size-4 text-accent" /> Switch to User Chat View
+              <MessageSquareIcon className="size-4 text-accent" /> Chat View
             </Button>
             <Button variant="secondary" size="sm" onClick={fetchAllData}>
-              <RefreshCwIcon className="size-4 mr-1.5" /> Refresh Telemetry
+              <RefreshCwIcon className="size-4 mr-1.5" /> Refresh
             </Button>
           </div>
         </div>
@@ -328,6 +336,10 @@ export default function AdminPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {showProfileModal && (
+        <ProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
+      )}
     </div>
   );
 }

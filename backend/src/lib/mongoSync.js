@@ -11,6 +11,7 @@ export async function syncUserToMongo(userData) {
       { _id: userData.id },
       {
         fullName: userData.fullName,
+        username: userData.username,
         email: userData.email,
         profilePic: userData.profilePic || "",
       },

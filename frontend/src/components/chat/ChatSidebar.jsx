@@ -10,6 +10,7 @@ import { CreateGroupModal } from "./CreateGroupModal";
 import { ProfileModal } from "./ProfileModal";
 import { StarredMessagesDrawer } from "./StarredMessagesDrawer";
 import { StoriesBar } from "./StoriesBar";
+import { MobileBottomNav } from "./MobileBottomNav";
 import { useNavigate } from "react-router";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
@@ -313,6 +314,9 @@ function ChatSidebar() {
           <SettingsIcon className="size-4" />
         </button>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav onOpenProfile={() => setIsProfileOpen(true)} />
     </aside>
   );
 }

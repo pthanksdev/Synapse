@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from "../lib/jwt.js";
 import User from "../models/user.model.js";
 import { syncUserToMongo } from "../lib/mongoSync.js";
@@ -34,16 +35,33 @@ export async function register(req, res, next) {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    const emailPrefix = email.split("@")[0].replace(/[^a-zA-Z0-9]/g, "");
+    const randomSuffix = crypto.randomBytes(2).toString("hex");
+    let username = `${emailPrefix}_${randomSuffix}`.toLowerCase();
+    
+    // Ensure uniqueness just in case
+    let isUnique = false;
+    while (!isUnique) {
+      const existingUsername = await User.findOne({ username });
+      if (existingUsername) {
+        username = `${emailPrefix}_${crypto.randomBytes(3).toString("hex")}`.toLowerCase();
+      } else {
+        isUnique = true;
+      }
+    }
+
     const newUser = await User.create({
       fullName,
+      username,
       email: email.toLowerCase(),
       password: hashedPassword,
-      profilePic: `https://avatar.iran.liara.run/public/boy?username=${encodeURIComponent(fullName)}`,
+      profilePic: `https://avatar.iran.liara.run/public/boy?username=${encodeURIComponent(username)}`,
     });
 
     syncUserToMongo({
       id: newUser._id.toString(),
       fullName: newUser.fullName,
+      username: newUser.username,
       email: newUser.email,
       profilePic: newUser.profilePic,
     });
@@ -139,11 +157,23 @@ export async function refreshToken(req, res, next) {
 
 export async function updateProfile(req, res, next) {
   try {
-    const { fullName, bio, profilePic, password } = req.body;
+    const { fullName, username, bio, profilePic, password } = req.body;
     const userId = req.user._id;
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (username && username !== user.username) {
+      // Basic username format validation
+      if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
+        return res.status(400).json({ message: "Username must be 3-20 characters long and can only contain letters, numbers, and underscores" });
+      }
+      const existing = await User.findOne({ username: username.toLowerCase() });
+      if (existing) {
+        return res.status(400).json({ message: "Username is already taken" });
+      }
+      user.username = username.toLowerCase();
+    }
 
     if (fullName) user.fullName = fullName;
     if (bio !== undefined) user.bio = bio;
@@ -157,6 +187,14 @@ export async function updateProfile(req, res, next) {
     }
 
     await user.save();
+
+    syncUserToMongo({
+      id: user._id.toString(),
+      fullName: user.fullName,
+      username: user.username,
+      email: user.email,
+      profilePic: user.profilePic,
+    });
 
     res.status(200).json({ message: "Profile updated successfully", user });
   } catch (error) {
