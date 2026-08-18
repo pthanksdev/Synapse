@@ -237,7 +237,7 @@ function ChatSidebar() {
         </div>
 
         {/* Chats Panel */}
-        <TabsContent value="chats" className="flex-1 overflow-x-hidden overflow-y-auto outline-none space-y-2 py-1">
+        <TabsContent value="chats" className="flex-1 overflow-x-hidden overflow-y-auto outline-none space-y-2 py-1 pb-20 lg:pb-2">
           {/* Archived Chats Header Banner */}
           {archivedList.length > 0 && (
             <div className="px-2 pt-1">
@@ -322,7 +322,7 @@ function ChatSidebar() {
         </TabsContent>
 
         {/* Groups Panel */}
-        <TabsContent value="groups" className="flex-1 overflow-x-hidden overflow-y-auto outline-none p-2 space-y-2">
+        <TabsContent value="groups" className="flex-1 overflow-x-hidden overflow-y-auto outline-none p-2 space-y-2 pb-20 lg:pb-2">
           <Button
             variant="secondary"
             size="sm"
@@ -358,7 +358,7 @@ function ChatSidebar() {
         </TabsContent>
 
         {/* Users / People Panel */}
-        <TabsContent value="users" className="flex-1 overflow-x-hidden overflow-y-auto outline-none">
+        <TabsContent value="users" className="flex-1 overflow-x-hidden overflow-y-auto outline-none pb-20 lg:pb-2">
           {isSearchingUsers ? (
             <p className="px-4 py-6 text-center text-xs text-muted">Searching users by username/email...</p>
           ) : filteredUsers.length === 0 ? (
@@ -378,8 +378,8 @@ function ChatSidebar() {
         </TabsContent>
       </Tabs>
 
-      {/* Bottom User Profile Card */}
-      <div className="shrink-0 border-t border-border bg-surface/40 p-2.5 flex items-center justify-between">
+      {/* Bottom User Profile Card (Desktop Only) */}
+      <div className="hidden lg:flex shrink-0 border-t border-border bg-surface/40 p-2.5 items-center justify-between">
         <div
           onClick={() => setIsProfileOpen(true)}
           className="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer group"

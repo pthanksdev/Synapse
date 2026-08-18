@@ -1,8 +1,9 @@
-import { MessageSquareIcon, UsersIcon, UserPlusIcon, SettingsIcon, ShieldAlertIcon } from "lucide-react";
+import { MessageSquareIcon, UsersIcon, UserPlusIcon, ShieldAlertIcon } from "lucide-react";
 import { useChatStore } from "../../store/useChatStore";
 import { useAuthStore } from "../../store/useAuthStore";
-import { useSelectedConversation } from "../../hooks/useSelectedConversation";
+import { useSelectedConversation, getInitials } from "../../hooks/useSelectedConversation";
 import { useNavigate } from "react-router";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 export function MobileBottomNav({ onOpenProfile }) {
   const sidebarTab = useChatStore((state) => state.sidebarTab);
@@ -73,10 +74,15 @@ export function MobileBottomNav({ onOpenProfile }) {
 
       <button
         onClick={onOpenProfile}
-        className="flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl text-muted hover:text-foreground transition"
+        className="flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl text-muted hover:text-foreground transition group"
       >
-        <SettingsIcon className="size-5" />
-        <span className="text-[10px]">Settings</span>
+        <Avatar className="size-5 border border-border/80 group-hover:border-accent">
+          <AvatarImage src={authUser?.profilePic} alt={authUser?.fullName} />
+          <AvatarFallback className="text-[8px] font-bold">
+            {getInitials(authUser?.fullName || "Me")}
+          </AvatarFallback>
+        </Avatar>
+        <span className="text-[10px]">Profile</span>
       </button>
     </nav>
   );
