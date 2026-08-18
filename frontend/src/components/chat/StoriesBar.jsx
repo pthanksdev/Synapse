@@ -50,9 +50,79 @@ const IMAGE_FILTERS = [
   { id: "cool", label: "Cool", filterCss: "saturate(110%) hue-rotate(15deg)" },
 ];
 
+// WhatsApp-Style Segmented Story Ring
+function WhatsAppSegmentedRing({ group, viewedMap }) {
+  const stories = group.stories;
+  const count = stories.length;
+  const size = 52;
+  const strokeWidth = 2.5;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const gap = count > 1 ? (count > 4 ? 4 : 6) : 0;
+  const segmentLength = (circumference - count * gap) / count;
+
+  const allViewed = stories.every((s) => viewedMap[s._id]);
+
+  return (
+    <div className="relative size-12 flex items-center justify-center">
+      <svg
+        className="absolute -inset-0.5 size-[52px] -rotate-90 pointer-events-none"
+        viewBox={`0 0 ${size} ${size}`}
+      >
+        {stories.map((story, i) => {
+          const isViewed = viewedMap[story._id];
+          const strokeDasharray = `${segmentLength} ${gap}`;
+          const strokeDashoffset = -i * (segmentLength + gap);
+
+          return (
+            <circle
+              key={story._id || i}
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              fill="none"
+              stroke={isViewed ? "rgba(156, 163, 175, 0.35)" : "#a855f7"}
+              strokeWidth={strokeWidth}
+              strokeDasharray={strokeDasharray}
+              strokeDashoffset={strokeDashoffset}
+              strokeLinecap="round"
+              className="transition-colors duration-300"
+            />
+          );
+        })}
+      </svg>
+      <Avatar className={`size-10 border-2 transition-opacity ${allViewed ? "border-transparent opacity-75" : "border-background"}`}>
+        <AvatarImage src={group.user?.profilePic} />
+        <AvatarFallback>{group.user?.fullName?.[0]}</AvatarFallback>
+      </Avatar>
+    </div>
+  );
+}
+
 export function StoriesBar() {
   const [stories, setStories] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Viewed Stories Tracking Map
+  const [viewedMap, setViewedMap] = useState(() => {
+    try {
+      const saved = localStorage.getItem("synapse_viewed_stories");
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const markStoryAsViewed = (storyId) => {
+    if (!storyId || viewedMap[storyId]) return;
+    setViewedMap((prev) => {
+      const updated = { ...prev, [storyId]: true };
+      try {
+        localStorage.setItem("synapse_viewed_stories", JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
 
   // Group stories by User ID
   const userStoriesGrouped = useMemo(() => {
@@ -121,6 +191,13 @@ export function StoriesBar() {
     fetchStories();
   }, []);
 
+  // Mark story as viewed when displayed
+  useEffect(() => {
+    if (activeStory?._id) {
+      markStoryAsViewed(activeStory._id);
+    }
+  }, [activeStory]);
+
   // Story Navigation Handlers
   const handleNextStory = () => {
     if (!currentGroup) return;
@@ -145,7 +222,6 @@ export function StoriesBar() {
       setActiveUserIndex((prev) => prev - 1);
       setActiveStoryIndex(prevGroup.stories.length - 1);
     } else {
-      // Re-trigger first story
       setActiveStoryIndex(0);
     }
   };
@@ -181,7 +257,6 @@ export function StoriesBar() {
       toast.success("Story deleted");
       fetchStories();
 
-      // If current story deleted, advance or close
       if (currentGroup?.stories.length === 1) {
         setActiveUserIndex(null);
       } else if (activeStoryIndex >= currentGroup.stories.length - 1) {
@@ -408,35 +483,30 @@ export function StoriesBar() {
           </div>
         )}
 
-        {/* Stories List - Grouped by User */}
-        {userStoriesGrouped.map((group, groupIdx) => (
-          <button
-            key={group.userId}
-            onClick={() => {
-              setActiveUserIndex(groupIdx);
-              setActiveStoryIndex(0);
-              setViewerMuted(group.stories[0]?.isMuted || false);
-            }}
-            className="flex flex-col items-center gap-1 shrink-0 group relative"
-          >
-            <div className="relative size-12 rounded-full p-0.5 bg-gradient-to-tr from-accent via-purple-500 to-pink-500 group-hover:scale-105 transition">
-              <Avatar className="size-full border-2 border-background">
-                <AvatarImage src={group.user?.profilePic} />
-                <AvatarFallback>{group.user?.fullName?.[0]}</AvatarFallback>
-              </Avatar>
-
-              {/* Story Count Badge if user posted multiple stories */}
-              {group.stories.length > 1 && (
-                <span className="absolute -top-1 -right-1 size-4 rounded-full bg-accent text-accent-foreground text-[9px] font-extrabold flex items-center justify-center border border-background shadow">
-                  {group.stories.length}
-                </span>
-              )}
-            </div>
-            <span className="text-[10px] font-medium text-foreground truncate max-w-[56px]">
-              {group.user?.fullName?.split(" ")[0]}
-            </span>
-          </button>
-        ))}
+        {/* Stories List - Grouped by User with WhatsApp Segmented Rings */}
+        {userStoriesGrouped.map((group, groupIdx) => {
+          const allViewed = group.stories.every((s) => viewedMap[s._id]);
+          return (
+            <button
+              key={group.userId}
+              onClick={() => {
+                setActiveUserIndex(groupIdx);
+                setActiveStoryIndex(0);
+                setViewerMuted(group.stories[0]?.isMuted || false);
+              }}
+              className="flex flex-col items-center gap-1 shrink-0 group relative"
+            >
+              <WhatsAppSegmentedRing group={group} viewedMap={viewedMap} />
+              <span
+                className={`text-[10px] truncate max-w-[56px] transition-colors ${
+                  allViewed ? "text-muted/60 font-normal" : "text-foreground font-semibold"
+                }`}
+              >
+                {group.user?.fullName?.split(" ")[0]}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Story Type Choice Popover via Portal */}
@@ -831,7 +901,7 @@ export function StoriesBar() {
                 </div>
               </div>
 
-              {/* Tap Navigation Click Areas (Left 30% = Previous, Right 70% = Next) */}
+              {/* Tap Navigation Click Areas */}
               <div
                 onClick={handlePrevStory}
                 className="absolute inset-y-0 left-0 w-1/3 z-20 cursor-pointer"
@@ -843,7 +913,7 @@ export function StoriesBar() {
                 title="Next Story"
               />
 
-              {/* Desktop Chevron Navigation Buttons */}
+              {/* Desktop Navigation Arrows */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -864,7 +934,7 @@ export function StoriesBar() {
                 <ChevronRightIcon className="size-5" />
               </button>
 
-              {/* Story Content: Text vs Video vs Image */}
+              {/* Story Content */}
               {activeStory.type === "text" ? (
                 <div className={`size-full bg-gradient-to-br ${activeStory.bgColor || "from-indigo-600 via-purple-600 to-pink-600"} flex items-center justify-center p-8 text-center`}>
                   <p className="text-white text-xl sm:text-2xl font-bold leading-relaxed drop-shadow-md break-words whitespace-pre-wrap">
